@@ -1,0 +1,13 @@
+PySide6
+Pillow
+mutagen
+librosa
+sounddevice
+scipy
+numpy
+bump2version
+appdirs
+black
+ruff
+pytest
+mypy

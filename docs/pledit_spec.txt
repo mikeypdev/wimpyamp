@@ -1,0 +1,13 @@
+Pledit.txt 
+This file should look somewhat like that: 
+
+[Text]
+Normal=#A6A6A6
+Current=#404040
+NormalBG=#F2F2F2
+SelectedBG=#F8F8F8
+MbFG=#404040
+MbBG=#CFCFCF
+Font=Arial
+
+A structure of this file is very simple: after the [Text] line there are fields and their values. What do they mean? Normal is a foreground (font) color, which is used to display a song’s name in winamp playlist. Current is a foreground color for the currently played song. NormalBG is simply a background of the playlist and SelectedBG – a background of the selected song (the one you have just clicked on). MbFG and MbBG are the minibrowser’s foreground and background colors. If you don’t want to skin minibrowser, just skip these fields. Font is a name of the font you use in your skin. Try not to use rare or non-standard fonts or, if you do so, place the TTF file into the skin’s directory. Note: all the values are given in HEX. 

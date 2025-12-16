@@ -1,0 +1,371 @@
+{
+  "metadata": {
+    "spec_version": "WinampSkinSpec-1.2.1-json-2025-11-07",
+    "source_pdf": "Unofficial WinAMP Skin Specifications v1.2.1",
+    "pdf_citation": ":contentReference[oaicite:1]{index=1}",
+    "default_main_window_size": { "width": 275, "height": 116 },
+    "palette_transparency_priority": [
+      "skin.ini specified index",
+      "magenta #FF00FF if present",
+      "top-left pixel key color"
+    ],
+    "notes": "Coordinates and rules taken from the uploaded PDF (v1.2.1)."
+  },
+
+  "sheets": {
+    "main.bmp": {
+      "description": "Main window background",
+      "size": { "width": 275, "height": 116 },
+      "sprites": {
+        "MAIN_WINDOW_BACKGROUND": { "x": 0, "y": 0, "w": 275, "h": 116 }
+      }
+    },
+
+    "cbuttons.bmp": {
+      "description": "Control buttons sheet (prev/play/pause/stop/next/eject)",
+      "size": { "width": 136, "height": 36 },
+      "sprites": {
+        "PREVIOUS": { "x": 0, "y": 0, "w": 23, "h": 18 },
+        "PREVIOUS_PRESSED": { "x": 0, "y": 18, "w": 23, "h": 18 },
+        "PLAY": { "x": 23, "y": 0, "w": 23, "h": 18 },
+        "PLAY_PRESSED": { "x": 23, "y": 18, "w": 23, "h": 18 },
+        "PAUSE": { "x": 46, "y": 0, "w": 23, "h": 18 },
+        "PAUSE_PRESSED": { "x": 46, "y": 18, "w": 23, "h": 18 },
+        "STOP": { "x": 69, "y": 0, "w": 23, "h": 18 },
+        "STOP_PRESSED": { "x": 69, "y": 18, "w": 23, "h": 18 },
+        "NEXT": { "x": 92, "y": 0, "w": 22, "h": 18 },
+        "NEXT_PRESSED": { "x": 92, "y": 18, "w": 22, "h": 18 },
+        "EJECT": { "x": 114, "y": 0, "w": 22, "h": 16 },
+        "EJECT_PRESSED": { "x": 114, "y": 16, "w": 22, "h": 16 }
+      }
+    },
+
+    "shufrep.bmp": {
+      "description": "Shuffle / Repeat / EQ / Playlist buttons (overlap rules)",
+      "size": { "width": 92, "height": 85 },
+      "sprites": {
+        "REPEAT_OFF": { "x": 0, "y": 0, "w": 28, "h": 15 },
+        "REPEAT_OFF_PRESSED": { "x": 0, "y": 15, "w": 28, "h": 15 },
+        "REPEAT_ON": { "x": 0, "y": 30, "w": 28, "h": 15 },
+        "REPEAT_ON_PRESSED": { "x": 0, "y": 45, "w": 28, "h": 15 },
+
+        "SHUFFLE_OFF": { "x": 28, "y": 0, "w": 47, "h": 15 },
+        "SHUFFLE_OFF_PRESSED": { "x": 28, "y": 15, "w": 47, "h": 15 },
+        "SHUFFLE_ON": { "x": 28, "y": 30, "w": 47, "h": 15 },
+        "SHUFFLE_ON_PRESSED": { "x": 28, "y": 45, "w": 47, "h": 15 },
+
+        "EQ_OFF": { "x": 0, "y": 61, "w": 23, "h": 12 },
+        "EQ_OFF_PRESSED": { "x": 46, "y": 61, "w": 23, "h": 12 },
+        "EQ_ON": { "x": 0, "y": 73, "w": 23, "h": 12 },
+        "EQ_ON_PRESSED": { "x": 46, "y": 73, "w": 23, "h": 12 },
+
+        "PL_OFF": { "x": 23, "y": 61, "w": 23, "h": 12 },
+        "PL_OFF_PRESSED": { "x": 69, "y": 61, "w": 23, "h": 12 },
+        "PL_ON": { "x": 23, "y": 73, "w": 23, "h": 12 },
+        "PL_ON_PRESSED": { "x": 69, "y": 73, "w": 23, "h": 12 }
+      },
+      "notes": "Shuffle and Repeat sprites overlap horizontally; render last toggled on top."
+    },
+
+    "playpaus.bmp": {
+      "description": "Play/Stop/Pause small indicator frames; work indicator",
+      "size": { "width": 42, "height": 9 },
+      "sprites": {
+        "PLAY_INDICATOR": { "x": 0, "y": 0, "w": 9, "h": 9 },
+        "PAUSE_INDICATOR": { "x": 9, "y": 0, "w": 9, "h": 9 },
+        "STOP_INDICATOR": { "x": 18, "y": 0, "w": 9, "h": 9 },
+        "BG_SEGMENT": { "x": 27, "y": 0, "w": 9, "h": 9 },
+        "WORK_ON": { "x": 36, "y": 0, "w": 3, "h": 9 },
+        "WORK_OFF": { "x": 39, "y": 0, "w": 3, "h": 9 }
+      },
+      "notes": "Play indicator overlaps work indicator; follow overlap rules from PDF."
+    },
+
+    "monoster.bmp": {
+      "description": "Mono/Stereo indicator sheet (overlap columns between mono and stereo)",
+      "size": { "width": 58, "height": 33 },
+      "sprites": {
+        "STEREO_ON": { "x": 0, "y": 0, "w": 29, "h": 12 },
+        "STEREO_OFF": { "x": 0, "y": 12, "w": 29, "h": 12 },
+        "MONO_ON": { "x": 29, "y": 0, "w": 29, "h": 12 },
+        "MONO_OFF": { "x": 29, "y": 12, "w": 29, "h": 12 }
+      },
+      "notes": "Mono sprite width may overlap stereo; treat overlap per PDF."
+    },
+
+    "posbar.bmp": {
+      "description": "Position (seek) bar: track + thumb (normal + pressed)",
+      "size": { "width": 307, "height": 10 },
+      "sprites": {
+        "POSITION_TRACK": { "x": 0, "y": 0, "w": 248, "h": 10 },
+        "POSITION_THUMB": { "x": 248, "y": 0, "w": 29, "h": 10 },
+        "POSITION_THUMB_PRESSED": { "x": 278, "y": 0, "w": 29, "h": 10 }
+      }
+    },
+
+    "balance.bmp": {
+      "description": "Left-Right Balance Adjuster: frames + thumb (normal + pressed)",
+      "size": { "width": 68, "height": 433 },
+      "sprites": {
+        "BALANCE_FRAMES": {
+          "pattern": {
+            "x": 9,
+            "y": 0,
+            "w": 38,
+            "h": 13,
+            "step_y": 15,
+            "count": 28
+          },
+          "description": "28 frames spaced by 15px vertically starting at y=0"
+        },
+        "SLIDER_PRESSED": { "x": 0, "y": 422, "w": 14, "h": 11 },
+        "SLIDER_NORMAL": { "x": 15, "y": 422, "w": 14, "h": 11 }
+      }
+    },
+
+    "volume.bmp": {
+      "description": "Volume & Pan frames (vertical frame strip) + thumb",
+      "size": { "width": 68, "height": 433 },
+      "sprites": {
+        "VOLUME_FRAMES": {
+          "pattern": {
+            "x": 0,
+            "y": 0,
+            "w": 68,
+            "h": 13,
+            "step_y": 15,
+            "count": 28
+          },
+          "description": "28 frames spaced by 15px vertically starting at y=0"
+        },
+        "BALANCE_FRAMES": {
+          "pattern": {
+            "x": 9,
+            "y": 0,
+            "w": 38,
+            "h": 13,
+            "step_y": 15,
+            "count": 28
+          },
+          "description": "Balance frames within same BMP (middle columns as a fallback for missing balance.bmp) for 28 steps"
+        },
+        "SLIDER_NORMAL": { "x": 15, "y": 422, "w": 14, "h": 11 },
+        "SLIDER_PRESSED": { "x": 0, "y": 422, "w": 14, "h": 11 }
+      }
+    },
+
+    "text.bmp": {
+      "description": "Classic Winamp 2.x text font (multi-band color variant grid)",
+      "size": { "width": 155, "height": 74 },
+              "glyph_grid": {
+                                    "glyph_width": 5,
+                                    "glyph_height": 6,
+                                    "cell_spacing": 1,
+                                    "cells_per_row": 26,
+                                    "rows_per_band": 3,
+                                    "bands": 4,
+                                    "band_separator": 0,        "ascii_range": [32, 126],
+        "mapping_rule": {
+          "column": "index % 26",
+          "row_in_band": "index // 26",
+          "sheetX": "column * 6",
+          "sheetY": "band * ((rows_per_band * glyph_height) + band_separator) + row_in_band * glyph_height"
+        },
+        "band_usage": {
+          "0": "Normal (black background)",
+          "1": "Selected/highlight (blue background)",
+          "2": "Inactive (black background)",
+          "3": "Inactive highlight (blue background)"
+        },
+        "transparent_color": "#FF00FF",
+        "notes": [
+          "Each band encodes a 3x26 grid of ASCII characters (0x20–0x7E).",
+          "There are 4 bands stacked vertically with a 2px divider.",
+          "Total height = 4*(3*6) + 2 = 74 px.",
+          "Classic Winamp chooses a band by window focus/highlight state."
+        ]
+      }
+    },
+
+    "numbers.bmp": {
+      "description": "Numeric glyphs (digits 0..9) and tiny minus/pad bits",
+      "size": { "width": 99, "height": 13 },
+      "sprites": {
+        "DIGITS": {
+          "pattern": {
+            "x": 0,
+            "y": 0,
+            "w": 9,
+            "h": 13,
+            "step_x": 9,
+            "count": 10
+          }
+        },
+        "NO_MINUS_SIGN": { "x": 9, "y": 6, "w": 5, "h": 1 },
+        "MINUS_SIGN": { "x": 20, "y": 6, "w": 5, "h": 1 }
+      }
+    },
+
+    "titlebar.bmp": {
+      "description": "Titlebar graphics and small control icons; hot area definitions are in PDF",
+      "sprites": {
+        "TITLEBAR_NORMAL": { "x": 27, "y": 0, "w": 275, "h": 14 },
+        "TITLEBAR_DIMMED": { "x": 27, "y": 15, "w": 275, "h": 14 },
+        "OPTION_BUTTON": { "x": 6, "y": 3, "w": 9, "h": 9 },
+        "MINIMIZE_BUTTON": { "x": 244, "y": 3, "w": 9, "h": 9 },
+        "SHADE_BUTTON": { "x": 254, "y": 3, "w": 9, "h": 9 },
+        "CLOSE_BUTTON": { "x": 264, "y": 3, "w": 9, "h": 9 }
+      },
+      "notes": "Coordinates relative to titlebar region; use for hit testing and drawing."
+    }
+  },
+
+  "destinations": {
+    "main_window": {
+      "size": { "w": 275, "h": 116 },
+      "draw_order": [
+        "background",
+        "titlebar",
+        "visualization",
+        "text_title",
+        "bitrate_sample",
+        "sliders_tracks",
+        "transport_buttons",
+        "eject",
+        "shuffle_repeat_eq_pl",
+        "mono_stereo",
+        "thumbs_active_overlays",
+        "work_indicator"
+      ],
+      "areas": {
+        "titlebar": { "x": 0, "y": 0, "w": 275, "h": 14 },
+        "hot_about": { "x": 253, "y": 91, "w": 13, "h": 15 },
+
+        "play_indicator_area": { "x": 24, "y": 28, "w": 11, "h": 9 },
+
+        "time_minus_sign": { "x": 40, "y": 32, "w": 5, "h": 1 },
+
+        "minute_tens": { "x": 48, "y": 26, "w": 9, "h": 13 },
+        "minute_ones": { "x": 60, "y": 26, "w": 9, "h": 13 },
+
+        "second_tens": { "x": 78, "y": 26, "w": 9, "h": 13 },
+        "second_ones": { "x": 90, "y": 26, "w": 9, "h": 13 },
+
+        "visualization": { "x": 24, "y": 43, "w": 76, "h": 16 },
+
+        "song_title_area": { "x": 112, "y": 27, "w": 152, "h": 6 },
+
+        "bitrate": { "x": 111, "y": 43, "w": 15, "h": 6 },
+        "sample_rate": { "x": 156, "y": 43, "w": 10, "h": 6 },
+
+        "mono_indicator": { "x": 212, "y": 41, "w": 27, "h": 12 },
+        "stereo_indicator": { "x": 239, "y": 41, "w": 29, "h": 12 },
+
+        "volume_slider": { "x": 107, "y": 57, "w": 68, "h": 13 },
+        "balance_slider": { "x": 177, "y": 57, "w": 38, "h": 13 },
+        "eq_button": { "x": 219, "y": 58, "w": 23, "h": 13 },
+        "playlist_button": { "x": 242, "y": 58, "w": 23, "h": 12 },
+
+        "position_track": { "x": 16, "y": 72, "w": 248, "h": 10 },
+
+        "controls_cluster": { "x": 16, "y": 88, "w": 114, "h": 18 },
+        "controls": [
+          {
+            "name": "previous",
+            "dest_x": 16,
+            "dest_y": 88,
+            "w": 23,
+            "h": 18,
+            "sprite": "PREVIOUS",
+            "sprite_pressed": "PREVIOUS_PRESSED"
+          },
+          {
+            "name": "play",
+            "dest_x": 39,
+            "dest_y": 88,
+            "w": 23,
+            "h": 18,
+            "sprite": "PLAY",
+            "sprite_pressed": "PLAY_PRESSED"
+          },
+          {
+            "name": "pause",
+            "dest_x": 62,
+            "dest_y": 88,
+            "w": 23,
+            "h": 18,
+            "sprite": "PAUSE",
+            "sprite_pressed": "PAUSE_PRESSED"
+          },
+          {
+            "name": "stop",
+            "dest_x": 85,
+            "dest_y": 88,
+            "w": 23,
+            "h": 18,
+            "sprite": "STOP",
+            "sprite_pressed": "STOP_PRESSED"
+          },
+          {
+            "name": "next",
+            "dest_x": 108,
+            "dest_y": 88,
+            "w": 22,
+            "h": 18,
+            "sprite": "NEXT",
+            "sprite_pressed": "NEXT_PRESSED"
+          }
+        ],
+
+        "eject": { "x": 136, "y": 89, "w": 22, "h": 16 },
+
+        "shuffle_dest": { "x": 164, "y": 89, "w": 47, "h": 15 },
+        "repeat_dest": { "x": 210, "y": 89, "w": 28, "h": 15 },
+
+        "shuffle_repeat_overlap_rules": "Shuffle sprite width 47 overlaps repeat area; last toggled drawn on top."
+      }
+    },
+
+    "eq_window": {
+      "note": "EQ window coordinates and sprites exist in PDF; refer to sheet EQ.bmp mapping in PDF if needed."
+    },
+
+    "playlist_editor": {
+      "note": "Playlist editor region coordinates are enumerated in PDF; include them when implementing PL."
+    },
+
+    "mini_mode": {
+      "note": "Mini-mode and shade mode have their own BMPs/rects; detailed tables available in PDF as needed."
+    }
+  },
+
+  "interaction": {
+    "button_states": ["normal", "pressed"],
+    "pressed_fallback": "If *_PRESSED sprite missing, use normal sprite for pressed state",
+    "overlap_rules": [
+      {
+        "area": "shuffle_repeat",
+        "rule": "z-order: last toggled is drawn last (on top)"
+      },
+      {
+        "area": "mono_stereo",
+        "rule": "Mono has two rightmost column overlap with stereo; render only the active indicator or use masking"
+      },
+      {
+        "area": "play_work_indicator",
+        "rule": "Play indicator overlaps work indicator; render per PDF layering"
+      }
+    ],
+    "slidebars": {
+      "position_mapping": "Thumb X = dest_x + round((value / max_value) * (track_w - thumb_w))",
+      "volume_mapping": "Frame index = round((value_norm) * (frame_count - 1)) (28 frames)",
+      "balance_mapping": "Frame index = round((value_norm) * (frame_count - 1)) (28 frames for balance.bmp)"
+    }
+  },
+
+  "hints": {
+    "retina_support": "Render to DPR-scaled backing surface: target_w = main_w * DPR; scale sprites uniformly",
+    "cache": "Cache extracted sprite pixmaps/bitmaps for repeated blits",
+    "bmp_loading": "Load BMP preserving palette (indexed) then convert to RGBA after applying transparency"
+  }
+}

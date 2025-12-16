@@ -1,0 +1,27 @@
+The characters in text.bmp are in four sections, with three lines in each
+section.
+
+ABCDEFGHIJKLMNOPQRSTUVWXYZ"@  
+0123456789….:()-'!_+\/[]^&%,=$
+ÅÖÄ?* 
+
+NOTE: The rightmost part of A is used as a padding character, x=4 y=0 w=1
+h=6 
+The 'A' character is 5x6 as all other characters but don't use the
+rightmost column, because is used as a black padding character to the right of
+the song title, when it is shorter than the display.
+
+NOTE: The default skin has a '@' character that is 6x6 but only 5x6 is
+actually drawn.
+
+NOTE: after the @ character in line 1, there should be two more characters, one is the "time display symbol" and the other is "title display space"
+
+NOTE: there is one character after the * (asterisk), which is the "kbps display space"
+
+NOTE: in the default skin, the 3-line pattern of characters is repeated four
+times, for a total of 12 lines. The 1st section is used by default, with the
+other used in different text situations (TBD).
+
+NOTE: Some skins might omit the repeating character patterns and only include the
+1st section of 3 lines. The app MUST account for these skin varients of text.bmp.
+

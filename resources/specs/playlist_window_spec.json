@@ -1,0 +1,749 @@
+{
+  "meta": {
+    "title": "Winamp Classic Playlist Window (PLEDIT) — Parsing and Rendering Spec",
+    "target_environment": "generic (language-agnostic, e.g. PyQt, SDL, Web, etc.)",
+    "sources": {
+      "derived_from": ["Winamp_skinning_tutorial_1_5_0.pdf"]
+    },
+    "notes": [
+      "All coordinates are absolute pixel regions within pledit.bmp.",
+      "Render coordinates are relative to the playlist window origin (0,0).",
+      "Tiling rules define how to repeat or stretch edge sprites when resizing.",
+      "State variants (normal, pressed, selected) must be handled by switching sprite indices."
+    ]
+  },
+
+  "spriteSheet": {
+    "file": "pledit.bmp",
+    "coordinateSpace": {
+      "origin": "top-left",
+      "units": "pixels"
+    },
+    "sprites": [
+      {
+        "id": "PLEDIT_TOP_LEFT_ACTIVE",
+        "x": 0,
+        "y": 0,
+        "width": 25,
+        "height": 20
+      },
+      {
+        "id": "PLEDIT_TOP_CENTER_FILL_ACTIVE",
+        "x": 26,
+        "y": 0,
+        "width": 100,
+        "height": 20
+      },
+      {
+        "id": "PLEDIT_TOP_RIGHT_FIXED_ACTIVE",
+        "x": 127,
+        "y": 0,
+        "width": 25,
+        "height": 20
+      },
+      {
+        "id": "PLEDIT_TOP_RIGHT_ACTIVE",
+        "x": 153,
+        "y": 0,
+        "width": 25,
+        "height": 20
+      },
+      {
+        "id": "PLEDIT_TOP_LEFT_INACTIVE",
+        "x": 0,
+        "y": 21,
+        "width": 25,
+        "height": 20
+      },
+      {
+        "id": "PLEDIT_TOP_FILL_INACTIVE",
+        "x": 26,
+        "y": 21,
+        "width": 100,
+        "height": 20
+      },
+      {
+        "id": "PLEDIT_TOP_RIGHT_INACTIVE",
+        "x": 153,
+        "y": 21,
+        "width": 25,
+        "height": 20
+      },
+      {
+        "id": "PLEDIT_LEFT_EDGE",
+        "x": 0,
+        "y": 42,
+        "width": 12,
+        "height": 29
+      },
+      {
+        "id": "PLEDIT_RIGHT_EDGE_SCROLL_GROOVE",
+        "x": 36,
+        "y": 42,
+        "width": 8,
+        "height": 29
+      },
+      {
+        "id": "PLEDIT_BOTTOM_LEFT_CONTROL_BAR",
+        "x": 0,
+        "y": 72,
+        "width": 125,
+        "height": 38
+      },
+      {
+        "id": "PLEDIT_BOTTOM_RIGHT_CONTROL_BAR",
+        "x": 126,
+        "y": 72,
+        "width": 149,
+        "height": 38
+      },
+      {
+        "id": "PLEDIT_ADD_BUTTON",
+        "x": 14,
+        "y": 80,
+        "width": 22,
+        "height": 18
+      },
+      {
+        "id": "PLEDIT_REMOVE_BUTTON",
+        "x": 43,
+        "y": 80,
+        "width": 22,
+        "height": 18
+      },
+      {
+        "id": "PLEDIT_SELECTION_BUTTON",
+        "x": 72,
+        "y": 80,
+        "width": 22,
+        "height": 18
+      },
+      {
+        "id": "PLEDIT_MISC_BUTTON",
+        "x": 101,
+        "y": 80,
+        "width": 22,
+        "height": 18
+      },
+      {
+        "id": "PLEDIT_LIST_BUTTON",
+        "x": 232,
+        "y": 80,
+        "width": 22,
+        "height": 18
+      },
+      {
+        "id": "PLEDIT_ADD_URL_BUTTON_UNPRESSED",
+        "x": 0,
+        "y": 111,
+        "width": 22,
+        "height": 18
+      },
+      {
+        "id": "PLEDIT_ADD_URL_BUTTON_PRESSED",
+        "x": 23,
+        "y": 111,
+        "width": 22,
+        "height": 18
+      },
+      {
+        "id": "PLEDIT_REMOVE_ALL_BUTTON_UNPRESSED",
+        "x": 54,
+        "y": 111,
+        "width": 22,
+        "height": 18
+      },
+      {
+        "id": "PLEDIT_REMOVE_ALL_BUTTON_PRESSED",
+        "x": 77,
+        "y": 111,
+        "width": 22,
+        "height": 18
+      },
+      {
+        "id": "PLEDIT_INVERT_SELECTION_BUTTON_UNPRESSED",
+        "x": 104,
+        "y": 111,
+        "width": 22,
+        "height": 18
+      },
+      {
+        "id": "PLEDIT_INVERT_SELECTION_BUTTON_PRESSED",
+        "x": 127,
+        "y": 111,
+        "width": 22,
+        "height": 18
+      },
+      {
+        "id": "PLEDIT_SORT_LIST_BUTTON_UNPRESSED",
+        "x": 154,
+        "y": 111,
+        "width": 22,
+        "height": 18
+      },
+      {
+        "id": "PLEDIT_SORT_LIST_BUTTON_PRESSED",
+        "x": 177,
+        "y": 111,
+        "width": 22,
+        "height": 18
+      },
+      {
+        "id": "PLEDIT_NEW_LIST_BUTTON_UNPRESSED",
+        "x": 204,
+        "y": 111,
+        "width": 22,
+        "height": 18
+      },
+      {
+        "id": "PLEDIT_NEW_LIST_BUTTON_PRESSED",
+        "x": 227,
+        "y": 111,
+        "width": 22,
+        "height": 18
+      },
+      {
+        "id": "PLEDIT_ADD_DIR_BUTTON_UNPRESSED",
+        "x": 0,
+        "y": 130,
+        "width": 22,
+        "height": 18
+      },
+      {
+        "id": "PLEDIT_ADD_DIR_BUTTON_PRESSED",
+        "x": 23,
+        "y": 130,
+        "width": 22,
+        "height": 18
+      },
+      {
+        "id": "PLEDIT_CROP_BUTTON_UNPRESSED",
+        "x": 54,
+        "y": 130,
+        "width": 22,
+        "height": 18
+      },
+      {
+        "id": "PLEDIT_CROP_BUTTON_PRESSED",
+        "x": 77,
+        "y": 130,
+        "width": 22,
+        "height": 18
+      },
+      {
+        "id": "PLEDIT_SELECT_NONE_BUTTON_UNPRESSED",
+        "x": 104,
+        "y": 130,
+        "width": 22,
+        "height": 18
+      },
+      {
+        "id": "PLEDIT_SELECT_NONE_BUTTON_PRESSED",
+        "x": 127,
+        "y": 130,
+        "width": 22,
+        "height": 18
+      },
+      {
+        "id": "PLEDIT_FILE_INFO_BUTTON_UNPRESSED",
+        "x": 154,
+        "y": 130,
+        "width": 22,
+        "height": 18
+      },
+      {
+        "id": "PLEDIT_FILE_INFO_BUTTON_PRESSED",
+        "x": 177,
+        "y": 130,
+        "width": 22,
+        "height": 18
+      },
+      {
+        "id": "PLEDIT_SAVE_LIST_BUTTON_UNPRESSED",
+        "x": 204,
+        "y": 130,
+        "width": 22,
+        "height": 18
+      },
+      {
+        "id": "PLEDIT_SAVE_LIST_BUTTON_PRESSED",
+        "x": 227,
+        "y": 130,
+        "width": 22,
+        "height": 18
+      },
+      {
+        "id": "PLEDIT_ADD_FILE_BUTTON_UNPRESSED",
+        "x": 0,
+        "y": 149,
+        "width": 22,
+        "height": 18
+      },
+      {
+        "id": "PLEDIT_ADD_FILE_BUTTON_PRESSED",
+        "x": 23,
+        "y": 149,
+        "width": 22,
+        "height": 18
+      },
+      {
+        "id": "PLEDIT_REMOVE_FILE_BUTTON_UNPRESSED",
+        "x": 54,
+        "y": 149,
+        "width": 22,
+        "height": 18
+      },
+      {
+        "id": "PLEDIT_REMOVE_FILE_BUTTON_PRESSED",
+        "x": 77,
+        "y": 149,
+        "width": 22,
+        "height": 18
+      },
+      {
+        "id": "PLEDIT_MISC_REMOVE_BUTTON_UNPRESSED",
+        "x": 54,
+        "y": 168,
+        "width": 22,
+        "height": 18
+      },
+      {
+        "id": "PLEDIT_MISC_REMOVE_BUTTON_PRESSED",
+        "x": 77,
+        "y": 168,
+        "width": 22,
+        "height": 18
+      },
+      {
+        "id": "PLEDIT_SELECT_ALL_BUTTON_UNPRESSED",
+        "x": 104,
+        "y": 149,
+        "width": 22,
+        "height": 18
+      },
+      {
+        "id": "PLEDIT_SELECT_ALL_BUTTON_PRESSED",
+        "x": 127,
+        "y": 149,
+        "width": 22,
+        "height": 18
+      },
+      {
+        "id": "PLEDIT_MISC_OPTIONS_BUTTON_UNPRESSED",
+        "x": 154,
+        "y": 149,
+        "width": 22,
+        "height": 18
+      },
+      {
+        "id": "PLEDIT_MISC_OPTIONS_BUTTON_PRESSED",
+        "x": 177,
+        "y": 149,
+        "width": 22,
+        "height": 18
+      },
+      {
+        "id": "PLEDIT_LOAD_LIST_BUTTON_UNPRESSED",
+        "x": 204,
+        "y": 149,
+        "width": 22,
+        "height": 18
+      },
+      {
+        "id": "PLEDIT_LOAD_LIST_BUTTON_PRESSED",
+        "x": 227,
+        "y": 149,
+        "width": 22,
+        "height": 18
+      },
+      {
+        "id": "PLEDIT_SCROLL_THUMB_UNPRESSED",
+        "x": 52,
+        "y": 53,
+        "width": 8,
+        "height": 18
+      },
+      {
+        "id": "PLEDIT_SCROLL_LEFT_BORDER",
+        "x": 31,
+        "y": 42,
+        "width": 5,
+        "height": 29
+      },
+      {
+        "id": "PLEDIT_SCROLL_RIGHT_BORDER",
+        "x": 44,
+        "y": 42,
+        "width": 7,
+        "height": 29
+      },
+      {
+        "id": "PLEDIT_SCROLL_THUMB_PRESSED",
+        "x": 62,
+        "y": 53,
+        "width": 8,
+        "height": 18
+      },
+      {
+        "id": "PLEDIT_DECORATION_BAR_ADD",
+        "x": 48,
+        "y": 111,
+        "width": 3,
+        "height": 54
+      },
+      {
+        "id": "PLEDIT_DECORATION_BAR_REMOVE",
+        "x": 100,
+        "y": 111,
+        "width": 3,
+        "height": 72
+      },
+      {
+        "id": "PLEDIT_DECORATION_BAR_SELECT",
+        "x": 150,
+        "y": 111,
+        "width": 3,
+        "height": 54
+      },
+      {
+        "id": "PLEDIT_DECORATION_BAR_MISC",
+        "x": 200,
+        "y": 111,
+        "width": 3,
+        "height": 54
+      },
+      {
+        "id": "PLEDIT_DECORATION_BAR_LIST",
+        "x": 250,
+        "y": 111,
+        "width": 3,
+        "height": 54
+      },
+      {
+        "id": "PLEDIT_CLOSE_BUTTON_PRESSED",
+        "x": 52,
+        "y": 42,
+        "width": 9,
+        "height": 9
+      },
+      {
+        "id": "PLEDIT_MAXIMIZE_BUTTON",
+        "x": 150,
+        "y": 42,
+        "width": 9,
+        "height": 9
+      },
+      {
+        "id": "PLEDIT_MAXIMIZE_BUTTON_PRESSED",
+        "x": 150,
+        "y": 42,
+        "width": 9,
+        "height": 9
+      },
+      {
+        "id": "PLEDIT_BOTTOM_BAR_FILLER",
+        "x": 179,
+        "y": 0,
+        "width": 25,
+        "height": 38
+      },
+      {
+        "id": "PLEDIT_VISUALIZATION_MINISCREEN",
+        "x": 205,
+        "y": 0,
+        "width": 75,
+        "height": 38
+      },
+      {
+        "id": "PLEDIT_TIME_STATUS_DISPLAY",
+        "x": 133,
+        "y": 82,
+        "width": 90,
+        "height": 6
+      },
+      {
+        "id": "PLEDIT_PREVIOUS_BUTTON_TRANSPORT",
+        "x": 132,
+        "y": 94,
+        "width": 7,
+        "height": 8
+      },
+      {
+        "id": "PLEDIT_PLAY_BUTTON_TRANSPORT",
+        "x": 140,
+        "y": 94,
+        "width": 8,
+        "height": 8
+      },
+      {
+        "id": "PLEDIT_PAUSE_BUTTON_TRANSPORT",
+        "x": 149,
+        "y": 94,
+        "width": 9,
+        "height": 8
+      },
+      {
+        "id": "PLEDIT_STOP_BUTTON_TRANSPORT",
+        "x": 159,
+        "y": 94,
+        "width": 9,
+        "height": 8
+      },
+      {
+        "id": "PLEDIT_NEXT_BUTTON_TRANSPORT",
+        "x": 169,
+        "y": 94,
+        "width": 7,
+        "height": 8
+      },
+      {
+        "id": "PLEDIT_OPEN_BUTTON_TRANSPORT",
+        "x": 177,
+        "y": 94,
+        "width": 9,
+        "height": 8
+      },
+      {
+        "id": "PLEDIT_CURRENT_TIME_MINUTES",
+        "x": 190,
+        "y": 95,
+        "width": 19,
+        "height": 6
+      },
+      {
+        "id": "PLEDIT_CURRENT_TIME_SECONDS",
+        "x": 212,
+        "y": 95,
+        "width": 10,
+        "height": 6
+      },
+      {
+        "id": "PLEDIT_PAGE_UP",
+        "x": 261,
+        "y": 74,
+        "width": 9,
+        "height": 5
+      },
+      {
+        "id": "PLEDIT_PAGE_DOWN",
+        "x": 261,
+        "y": 79,
+        "width": 9,
+        "height": 5
+      }
+    ]
+  },
+  "layout": {
+    "window": {
+      "default_size": { "width": 275, "height": 116 },
+      "min_height": 58,
+      "resizeable": true
+    },
+
+    "regions": {
+      "top_bar": {
+        "position": { "x": 0, "y": 0 },
+        "height": 20,
+        "components": [
+          {
+            "id": "top_left_corner",
+            "sprite": "PLEDIT_TOP_LEFT_ACTIVE",
+            "x": 0,
+            "y": 0,
+            "type": "fixed"
+          },
+          {
+            "id": "top_title",
+            "sprite": "PLEDIT_TOP_CENTER_FILL_ACTIVE",
+            "x": 25,
+            "y": 0,
+            "type": "fixed"
+          },
+          {
+            "id": "top_tiling_fill",
+            "sprite": "PLEDIT_TOP_RIGHT_FIXED_ACTIVE",
+            "x": 125,
+            "y": 0,
+            "type": "tiled_x"
+          },
+          {
+            "id": "top_right_corner",
+            "sprite": "PLEDIT_TOP_RIGHT_ACTIVE",
+            "x": "window.width - 25",
+            "y": 0,
+            "type": "fixed"
+          }
+        ]
+      },
+      "left_edge": {
+        "position": { "x": 0, "y": 20 },
+        "width": 12,
+        "tiling": { "fill_y": "PLEDIT_LEFT_EDGE" }
+      },
+      "right_edge": {
+        "position": { "x": "window.width - 20", "y": 20 },
+        "width": 20,
+        "components": [
+          {
+            "id": "scroll_left_border",
+            "sprite": "PLEDIT_SCROLL_LEFT_BORDER",
+            "x": 0,
+            "y": 0,
+            "type": "tiled_y"
+          },
+          {
+            "id": "scroll_groove",
+            "sprite": "PLEDIT_RIGHT_EDGE_SCROLL_GROOVE",
+            "x": 5,
+            "y": 0,
+            "type": "tiled_y"
+          },
+          {
+            "id": "scroll_right_border",
+            "sprite": "PLEDIT_SCROLL_RIGHT_BORDER",
+            "x": 13,
+            "y": 0,
+            "type": "tiled_y"
+          }
+        ]
+      },
+      "bottom_bar": {
+        "position": { "x": 0, "y": "window.height - 38" },
+        "height": 38,
+        "tiling": {
+          "left": "PLEDIT_BOTTOM_LEFT_CONTROL_BAR",
+          "right": "PLEDIT_BOTTOM_RIGHT_CONTROL_BAR",
+          "fill_x": "PLEDIT_BOTTOM_BAR_FILLER"
+        },
+        "components": [
+          {
+            "id": "visualization_miniscreen",
+            "sprite": "PLEDIT_VISUALIZATION_MINISCREEN",
+            "x": "window.width - 149 - 75",
+            "y": 0,
+            "type": "conditional",
+            "condition": "window.width >= 350"
+          }
+        ]
+      },
+      "track_area": {
+        "position": { "x": 12, "y": 20 },
+        "size": {
+          "width": "window.width - 24",
+          "height": "window.height - 58"
+        },
+        "tile_rule": "solid_color_or_pattern",
+        "row_height": 13,
+        "font": {
+          "glyph_source": "TEXT.BMP",
+          "char_height": 9
+        }
+      }
+    },
+
+    "controls": {
+      "button_bar": {
+        "position": { "x": 14, "y": 80 },
+        "buttons": [
+          {
+            "id": "add",
+            "sprite": "PLEDIT_ADD_BUTTON",
+            "x": 0,
+            "y": 0
+          },
+          {
+            "id": "remove",
+            "sprite": "PLEDIT_REMOVE_BUTTON",
+            "x": 29,
+            "y": 0
+          },
+          {
+            "id": "select",
+            "sprite": "PLEDIT_SELECTION_BUTTON",
+            "x": 58,
+            "y": 0
+          },
+          {
+            "id": "misc",
+            "sprite": "PLEDIT_MISC_BUTTON",
+            "x": 87,
+            "y": 0
+          },
+          {
+            "id": "list",
+            "sprite": "PLEDIT_LIST_BUTTON",
+            "x": 218,
+            "y": 0
+          }
+        ]
+      },
+      "scrollbar": {
+        "position": { "x": "window.width - 15", "y": 20 },
+        "width": 8,
+        "elements": {
+          "track": "PLEDIT_RIGHT_EDGE_SCROLL_GROOVE",
+          "thumb": "PLEDIT_SCROLL_THUMB_UNPRESSED"
+        },
+        "behaviour": {
+          "tile_track_vertically": true,
+          "thumb_drag": "update scroll offset",
+          "button_step": "scroll by one row height"
+        }
+      },
+      "close_button": {
+        "id": "close",
+        "sprite": "PLEDIT_CLOSE_BUTTON",
+        "sprite_pressed": "PLEDIT_CLOSE_BUTTON_PRESSED",
+        "position": { "x": "window.width - 11", "y": 4 },
+        "width": 9,
+        "height": 9
+      },
+      "maximize_button": {
+        "id": "maximize",
+        "sprite": "PLEDIT_MAXIMIZE_BUTTON",
+        "sprite_pressed": "PLEDIT_MAXIMIZE_BUTTON_PRESSED",
+        "position": { "x": "window.width - 22", "y": 4 },
+        "width": 9,
+        "height": 9
+      }
+    }
+  },
+
+  "renderingRules": {
+    "coordinate_system": "integer pixel positions, top-left origin",
+    "z_order": [
+      "background fill/tiling",
+      "track text lines",
+      "borders and edges",
+      "buttons and scrollbar",
+      "selection highlight overlays"
+    ],
+    "tiling": {
+      "horizontal_edges": "repeat x without scaling",
+      "vertical_edges": "repeat y without scaling",
+      "center_area": "solid fill or stretch if skin provides center bitmap"
+    },
+    "button_states": ["normal", "pressed", "disabled (optional)"],
+    "selection_highlight": {
+      "color": "#80A0FF",
+      "blend_mode": "overlay",
+      "row_height": 13
+    }
+  },
+
+  "parsingRules": {
+    "pledit_bmp_structure": {
+      "sections": [
+        "top edge tiles (active/inactive)",
+        "left/right edges (repeatable vertical)",
+        "bottom bar and button groups (normal/pressed rows)",
+        "scrollbar area (up/down/track/thumb)"
+      ],
+      "dividers": "1-pixel separators between sprite regions, exclude from slice",
+      "state_rows": "bottom groups have normal row first, pressed row directly below"
+    },
+    "state_mapping": {
+      "rule": "append _PRESSED or _SELECTED to base sprite id to locate alternate states"
+    }
+  }
+}

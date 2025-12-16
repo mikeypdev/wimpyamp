@@ -1,0 +1,46 @@
+# GitLab CI configuration for WimPyAmp
+# Matches the GitHub Actions workflow
+
+stages:
+  - test
+  - build
+
+# Test stage - runs quality checks
+test_quality:
+  stage: test
+  image: python:3.13-slim
+  before_script:
+    - apt-get update -q
+    - apt-get install -y --no-install-recommends python3 python3-pip make
+  script:
+    - make setup
+    - make check
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push" && ($CI_COMMIT_REF_NAME == "main" || $CI_COMMIT_REF_NAME == "master")
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_PIPELINE_SOURCE == "web"
+
+# Build stage - creates distribution archive
+build_dist:
+  stage: build
+  image: python:3.13-slim
+  before_script:
+    - apt-get update -q
+    - apt-get install -y --no-install-recommends python3 python3-pip make binutils
+  script:
+    - make setup
+    - make dist
+    # Only create distribution archive on macOS runners for proper signing
+    #- if [ "$CI_RUNNER_DESCRIPTION" = "macOS" ] || [ "$(uname)" = "Darwin" ]; then
+    #    echo "Running on macOS - building distribution with ad-hoc signing";
+    #    make dist-archive;
+    #  else
+    #    echo "Skipping dist-archive on non-macOS platform";
+    #    echo "To create distribution archive, run on macOS: make dist-archive";
+    #  fi
+  artifacts:
+    paths:
+      - dist/
+    expire_in: 1 week
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push" && ($CI_COMMIT_REF_NAME == "main" || $CI_COMMIT_REF_NAME == "master")
