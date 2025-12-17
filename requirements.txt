@@ -1,7 +1,8 @@
 PySide6
 Pillow
 mutagen
-numba==0.62.0
+numba==0.62.0; python_version < '3.14' and sys_platform == 'darwin' and platform_machine == 'x86_64'
+numba; python_version >= '3.14' or sys_platform != 'darwin' or platform_machine != 'x86_64'
 librosa
 sounddevice
 scipy
