@@ -8,7 +8,6 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QPainter, QKeySequence, QShortcut, QAction, QFileOpenEvent
 from PySide6.QtCore import Qt, QPoint, QRect, QTimer
 import os
-import plistlib
 
 from ..core.skin_parser import SkinParser
 from ..core.renderer import Renderer
@@ -1451,28 +1450,7 @@ class MainWindow(QWidget):
                     # Set the appropriate button pressed state
                     if button_index == 0:  # 'O' - Options Menu
                         self.ui_state.is_options_pressed = True
-
-                        # Show the skin selection dialog
-                        dialog = SkinSelectionDialog(self)
-                        result = dialog.exec_()
-
-                        if result == 1:  # Load New Skin
-                            # Open file dialog to load a new skin
-                            skin_path, _ = QFileDialog.getOpenFileName(
-                                self,
-                                "Load Winamp Skin",
-                                "",
-                                "Winamp Skins (*.wsz *.zip);;Winamp Skins (*.wsz);;ZIP Files (*.zip);;All Files (*)",
-                            )
-
-                            if skin_path:
-                                self.load_new_skin(skin_path)
-                        elif result == 2:  # Load Default Skin
-                            # Load the default skin
-                            self.load_new_skin(self.default_skin_path)
-                            # Remove the saved skin preference to use default skin going forward
-                            # Setting to default skin path will automatically remove the entry
-                            self.preferences.set_current_skin(self.default_skin_path)
+                        self.show_skin_selection_dialog()
                     elif button_index == 1:  # 'A' - Always on Top
                         self.ui_state.is_always_on_top_pressed = True
                     elif button_index == 2:  # 'I' - File Info / Album Art
@@ -1804,6 +1782,29 @@ class MainWindow(QWidget):
 
         except Exception as e:
             print(f"ERROR: Failed to load new skin: {e}")
+
+    def show_skin_selection_dialog(self):
+        """Show the skin selection dialog and handle the result."""
+        dialog = SkinSelectionDialog(self)
+        result = dialog.exec_()
+
+        if result == 1:  # Load New Skin
+            # Open file dialog to load a new skin
+            skin_path, _ = QFileDialog.getOpenFileName(
+                self,
+                "Load Winamp Skin",
+                "",
+                "Winamp Skins (*.wsz *.zip);;Winamp Skins (*.wsz);;ZIP Files (*.zip);;All Files (*)",
+            )
+
+            if skin_path:
+                self.load_new_skin(skin_path)
+        elif result == 2:  # Load Default Skin
+            # Load the default skin
+            self.load_new_skin(self.default_skin_path)
+            # Remove the saved skin preference to use default skin going forward
+            # Setting to default skin path will automatically remove the entry
+            self.preferences.set_current_skin(self.default_skin_path)
 
     def update_visualization(self):
         """Update visualization by getting data from audio engine and updating renderer."""
@@ -2155,7 +2156,7 @@ def main():
             # Preferences action
             prefs_action = QAction("Preferences...", self)
             prefs_action.setShortcut(QKeySequence(Qt.CTRL | Qt.Key_Comma))
-            # prefs_action.triggered.connect(self._show_preferences)  # Implementation not provided
+            prefs_action.triggered.connect(self._show_preferences)
             app_menu.addAction(prefs_action)
 
             app_menu.addSeparator()
@@ -2191,6 +2192,11 @@ def main():
                 self._app_menu.deleteLater()
                 delattr(self, "_app_menu")
 
+        def _show_preferences(self):
+            """Show the preferences dialog."""
+            if hasattr(self, "main_window") and self.main_window:
+                self.main_window.show_skin_selection_dialog()
+
         def _show_about_dialog(self):
             """Show an About dialog for the application.
 
@@ -2209,7 +2215,9 @@ def main():
                                 version = vf.read().strip() or version
                 else:
                     # Development: read VERSION from project root
-                    project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+                    project_root = os.path.dirname(
+                        os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                    )
                     version_path = os.path.join(project_root, "VERSION")
                     if os.path.exists(version_path):
                         with open(version_path, "r") as vf:
@@ -2219,7 +2227,7 @@ def main():
 
             about_html = (
                 f"<h2>WimPyAmp</h2>Version: {version}<br><br>"
-                "<a href=\"https://github.com/mikeypdev/wimpyamp\">https://github.com/mikeypdev/wimpyamp</a><br><br>"
+                '<a href="https://github.com/mikeypdev/wimpyamp">https://github.com/mikeypdev/wimpyamp</a><br><br>'
                 "©2025 Mike Perry"
             )
 
