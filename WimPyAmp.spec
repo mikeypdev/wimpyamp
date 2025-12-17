@@ -11,7 +11,7 @@ a = Analysis(
     ['run_wimpyamp.py'],
     pathex=[],
     binaries=[],
-    datas=[('resources', 'resources')],
+    datas=[('resources', 'resources'), ('VERSION', '.')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},

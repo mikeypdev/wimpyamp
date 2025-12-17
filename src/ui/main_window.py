@@ -25,7 +25,7 @@ from .album_art_window import AlbumArtWindow
 # Import audio engine
 from ..audio.audio_engine import AudioEngine
 
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QPushButton
+from PySide6.QtWidgets import QDialog, QVBoxLayout, QPushButton, QMessageBox, QLabel
 
 
 class SkinSelectionDialog(QDialog):
@@ -1450,28 +1450,7 @@ class MainWindow(QWidget):
                     # Set the appropriate button pressed state
                     if button_index == 0:  # 'O' - Options Menu
                         self.ui_state.is_options_pressed = True
-
-                        # Show the skin selection dialog
-                        dialog = SkinSelectionDialog(self)
-                        result = dialog.exec_()
-
-                        if result == 1:  # Load New Skin
-                            # Open file dialog to load a new skin
-                            skin_path, _ = QFileDialog.getOpenFileName(
-                                self,
-                                "Load Winamp Skin",
-                                "",
-                                "Winamp Skins (*.wsz *.zip);;Winamp Skins (*.wsz);;ZIP Files (*.zip);;All Files (*)",
-                            )
-
-                            if skin_path:
-                                self.load_new_skin(skin_path)
-                        elif result == 2:  # Load Default Skin
-                            # Load the default skin
-                            self.load_new_skin(self.default_skin_path)
-                            # Remove the saved skin preference to use default skin going forward
-                            # Setting to default skin path will automatically remove the entry
-                            self.preferences.set_current_skin(self.default_skin_path)
+                        self.show_skin_selection_dialog()
                     elif button_index == 1:  # 'A' - Always on Top
                         self.ui_state.is_always_on_top_pressed = True
                     elif button_index == 2:  # 'I' - File Info / Album Art
@@ -1500,6 +1479,37 @@ class MainWindow(QWidget):
                         self.audio_engine.set_visualization_mode(new_vis_mode)
                     self.update()
                     return
+
+        # Hot-about (Winamp info) clickable area
+        try:
+            spec = self.skin_data.spec_json
+            main_window_areas = spec["destinations"]["main_window"]["areas"]
+            hot_about_spec = main_window_areas.get("hot_about")
+            if hot_about_spec:
+                hot_about_rect = QRect(
+                    hot_about_spec["x"],
+                    hot_about_spec["y"],
+                    hot_about_spec["w"],
+                    hot_about_spec["h"],
+                )
+                if hot_about_rect.contains(event.pos()):
+                    # Use app-level handler if available, otherwise show QMessageBox directly
+                    try:
+                        app = QApplication.instance()
+                        if hasattr(app, "_show_about_dialog"):
+                            app._show_about_dialog()
+                        else:
+                            QMessageBox.about(
+                                self,
+                                "About WimPyAmp",
+                                "WimPyAmp\n\nVersion: 0.0.0\n\nA lightweight Winamp-style music player.\n\n© WimPyAmp Project",
+                            )
+                    except Exception:
+                        QMessageBox.about(self, "About WimPyAmp", "WimPyAmp")
+                    return
+        except Exception:
+            # If anything goes wrong while checking hot_about, fall back to default handling
+            pass
 
         super().mousePressEvent(event)
 
@@ -1772,6 +1782,29 @@ class MainWindow(QWidget):
 
         except Exception as e:
             print(f"ERROR: Failed to load new skin: {e}")
+
+    def show_skin_selection_dialog(self):
+        """Show the skin selection dialog and handle the result."""
+        dialog = SkinSelectionDialog(self)
+        result = dialog.exec_()
+
+        if result == 1:  # Load New Skin
+            # Open file dialog to load a new skin
+            skin_path, _ = QFileDialog.getOpenFileName(
+                self,
+                "Load Winamp Skin",
+                "",
+                "Winamp Skins (*.wsz *.zip);;Winamp Skins (*.wsz);;ZIP Files (*.zip);;All Files (*)",
+            )
+
+            if skin_path:
+                self.load_new_skin(skin_path)
+        elif result == 2:  # Load Default Skin
+            # Load the default skin
+            self.load_new_skin(self.default_skin_path)
+            # Remove the saved skin preference to use default skin going forward
+            # Setting to default skin path will automatically remove the entry
+            self.preferences.set_current_skin(self.default_skin_path)
 
     def update_visualization(self):
         """Update visualization by getting data from audio engine and updating renderer."""
@@ -2115,7 +2148,7 @@ def main():
 
             # About action
             about_action = QAction("About WimPyAmp", self)
-            # about_action.triggered.connect(self._show_about_dialog)  # Implementation not provided
+            about_action.triggered.connect(self._show_about_dialog)
             app_menu.addAction(about_action)
 
             app_menu.addSeparator()
@@ -2123,7 +2156,7 @@ def main():
             # Preferences action
             prefs_action = QAction("Preferences...", self)
             prefs_action.setShortcut(QKeySequence(Qt.CTRL | Qt.Key_Comma))
-            # prefs_action.triggered.connect(self._show_preferences)  # Implementation not provided
+            prefs_action.triggered.connect(self._show_preferences)
             app_menu.addAction(prefs_action)
 
             app_menu.addSeparator()
@@ -2158,6 +2191,57 @@ def main():
             if hasattr(self, "_app_menu"):
                 self._app_menu.deleteLater()
                 delattr(self, "_app_menu")
+
+        def _show_preferences(self):
+            """Show the preferences dialog."""
+            if hasattr(self, "main_window") and self.main_window:
+                self.main_window.show_skin_selection_dialog()
+
+        def _show_about_dialog(self):
+            """Show an About dialog for the application.
+
+            Use embedded VERSION file when running frozen (PyInstaller bundles).
+            During development, read VERSION from the project root.
+            """
+            version = "0.0.0"
+            try:
+                if getattr(sys, "frozen", False):
+                    # When frozen by PyInstaller, VERSION can be included in sys._MEIPASS
+                    meipass = getattr(sys, "_MEIPASS", None)
+                    if meipass:
+                        version_path = os.path.join(meipass, "VERSION")
+                        if os.path.exists(version_path):
+                            with open(version_path, "r") as vf:
+                                version = vf.read().strip() or version
+                else:
+                    # Development: read VERSION from project root
+                    project_root = os.path.dirname(
+                        os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                    )
+                    version_path = os.path.join(project_root, "VERSION")
+                    if os.path.exists(version_path):
+                        with open(version_path, "r") as vf:
+                            version = vf.read().strip() or version
+            except Exception:
+                pass
+
+            about_html = (
+                f"<h2>WimPyAmp</h2>Version: {version}<br><br>"
+                '<a href="https://github.com/mikeypdev/wimpyamp">https://github.com/mikeypdev/wimpyamp</a><br><br>'
+                "©2025 Mike Perry"
+            )
+
+            # Use a custom QMessageBox to allow clickable link
+            dlg = QMessageBox()
+            dlg.setWindowTitle("About WimPyAmp")
+            dlg.setTextFormat(Qt.RichText)
+            dlg.setText(about_html)
+            dlg.setStandardButtons(QMessageBox.Ok)
+            dlg.setTextInteractionFlags(Qt.TextBrowserInteraction)
+            # Open links in system browser
+            for child in dlg.findChildren(QLabel):
+                child.setOpenExternalLinks(True)
+            dlg.exec_()
 
         def event(self, event):
             # On macOS, handle file opening events
