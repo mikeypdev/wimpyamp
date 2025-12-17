@@ -1,6 +1,7 @@
 PySide6
 Pillow
 mutagen
+numba==0.62.0
 librosa
 sounddevice
 scipy
