@@ -4,42 +4,61 @@
 
 ## Overview
 
-WimPyAmp is a Python desktop music player app designed for playing local music files. It is compatible with Winamp skins for UI customization.
+WimPyAmp is a desktop music player designed for playing your local music collection, including hi-res lossless files. It’s compatible with Winamp skins for a really fun retro-pixel UI, and it looks suprisingly great on modern desktops. There are [thousands](https://skins.webamp.org/) of custom skins available that (should) work with WimPyAmp. You can even make your own!
 
-![WimPyAmp Screenshot](./WimPyAmp.png)
+![WimPyAmp screenshot - default skin: base-2.91.wsz](./WimPyAmp.png)
 
-## Background
-
-### Goals
-
-1. Build a decent music player app solely for my local file music collection, which includes mp3s, lossless CD rips, and purchased hi-res audio tracks (and add nothing extra, like a music library, streaming support, integration with Apple Music, etc.)
-2. Learn best-practices when using terminal-based AI coding agents, including gemini-cli, crush, qwen-code, and others
-
-### UI Skinning
-
-While working on the design for the music player, I remembered how much I liked using Winamp way back in the mp3 days, and I decided to take inspiration from its UI design. I then remembered that 1000's of skins were created for Winamp by countless users and fans, and saw that the Webamp project has a [massive archive](https://skins.webamp.org/) of them. So I decided to make the music player UI (hopefully) pixel-perfect compatible with most Winamp skins. Note again that this app is not Winamp, so feature parity and full skin functionality should not be expected.
-
-### AI Coding Agents
-
-This project was entirely coded by AI agents, mostly Gemini and Qwen. If you read the code, you'll see that it's really just a light framework for some excellent Python libraries, including librosa, mutagen, Pillow, and others, and connects them to a Python QT UI system that renders bitmaps from Winamp skin archives.
-
-This project could not have been made without those awesome libraries or the Webamp project, which archived key documents for the Winamp skin specification, as well as provided a reference implementation for the mini-visualizer.
-
-There is an `AGENT-lite.md` file that attempts to provide low-capability agents with instructions to avoid doing dumb things. It kinda works, sometimes.
+WimPyAmp assumes that you have your music collection and playlists reasonably organized on your file system or network share, so it doesn’t try to create some kind of library. It trusts you. And desktop search works pretty well these days, so searching your collection is straightforward.
 
 ## Using WimPyAmp
 
-The app pretty much works like you might remember from Winamp (if you're old enough to remember). One difference is support for Album Art. Click "I" in the main window clutter bar, and an Album Art window will appear. It should show art from either the current track's metadata or an image in the same directory like `folder.jpg`. I generated a placeholder image using Gemini Nano Banana. You can see the Gemini watermark in the lower right corner of the image.
+![WimPyAmp screenshot - skin: Expensive Hi-Fi 1.2.wsz](./WimPyAmp-3.png)
 
-I built this on a Mac, and can confirm that it works with Intel macOS 12, and Apple Silicon macOS 26. It should also work on Linux and Windows, but I haven't tested it.
+The app pretty much works like you might remember from Winamp (if you're old enough to remember). The “eject” button in the main window let’s you choose and load a single track. If you open the Playlist window, you’ll find options to load playlist files or add entire directories to the playlist (useful for albums). You can also select a track in your file system and choose “Open With...” WimPyAmp.
 
-## Developing
+Click the “V” button in the main window clutterbar to toggle between visualizer types (spectrum analyzer, waveform, none).
 
-There's a Makefile in the project that should handle everything for you. After cloning the repo, just run `make setup` to install dependencies and create the venv, then run `make run`.
+WimPyAmp also has support for Album Art. Click "I" in the main window clutter bar, and an Album Art window will appear. It should show art from either the current track's metadata or an image in the same directory like `folder.jpg`. If there isn’t any art available, you’ll see a placeholder image (it was generated using Gemini Nano Banana - notice the watermark in the lower right corner of the image).
+
+To load a new skin or reload the default skin, either choose the Settings menu, or click “O” in the main window clutter bar.
+
+Releases are available for Mac on Intel and Apple Silicon. It should also work on Linux and Windows, but it has not been tested.
+
+## Features and Bugs
+
+![WimPyAmp screenshot - skin: Mac OS X Winamp Skin.zip](./WimPyAmp-2.png)
+
+Want other features? Found a bug? Open an Issue!
+
+Q: Does WimPyAmp support streaming services like Spotify? Is that planned?
+A: Nope
+
+Q: Will it play CDs or SACDs?
+A: You have a CD/DVD drive? Wow. I’ll keep it in mind.
+
+## Developer Notes
+
+### Python
+
+This was developed on an old Intel Mac using Python 3.13, as well an Apple Silicon Mac using Python 3.14. The core audio library is the amazing librosa, and UI is PySide6 (Python QT).
+
+Intel Mac support is fading away, so pay attention to supported libraries if you are on an old Mac.
+
+### Makefile
+
+There's a Makefile in the project that should handle everything. After cloning the repo, just run `make setup` to install dependencies and create the venv, then run `make run`.
 
 Type `make help` to see other options, like linting or making an app bundle or binary.
 
-I recommend sticking with AI coding agents for this project. Feel free to regenerate the `AGENTS.md` file to accommodate whatever agent you use.
+### AI Coding Agents
+
+This project was entirely coded by AI agents, mostly Gemini and Qwen, using spec-driven development (it was *not* “vibe-coded”). If you read the generated code, you'll see that it's really just a framework for some excellent Python libraries, including librosa, mutagen, Pillow, and others, and connects them to a PySide6 UI that renders bitmaps from Winamp skin archives.
+
+This project could not have been made without those awesome libraries or the Webamp project, which archived key documents for the Winamp skin specification, as well as provided a reference implementation for the mini-visualizer.
+
+The specs are in the `docs/` directory, along with some original Winamp skinning guidelines. If you add a feature, you must create a spec first. Let the AI help you, and force the AI to review it before implementation.
+
+There is an `AGENT-lite.md` file that attempts to provide low-capability agents with instructions to avoid doing dumb things. It kinda works, sometimes.
 
 ## License
 
