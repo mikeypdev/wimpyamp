@@ -141,6 +141,9 @@ class PlaylistWindow(QWidget):
 
         # State for scrollbar thumb dragging is now managed by scrollbar_manager
 
+        # Flag to prevent recursive resize calls when applying constraints
+        self._applying_resize_constraints = False
+
         self.setMouseTracking(True)  # Enable mouse tracking
 
         # Initialize timer for updating time display
@@ -149,6 +152,9 @@ class PlaylistWindow(QWidget):
         self.time_display_timer = QTimer()
         self.time_display_timer.timeout.connect(self.update)
         self.time_display_timer.start(1000)  # Update every second
+
+        # Apply stepped resize constraints to ensure initial size follows proper dimensions
+        self._apply_stepped_resize_constraints()
 
         self.normal_bg_color = QColor(DEFAULT_NORMAL_BG_COLOR)  # Default to black
         self.selected_bg_color = QColor(
@@ -2209,7 +2215,12 @@ class PlaylistWindow(QWidget):
                 self.text_renderer.render_text(painter, display_text, text_x, text_y)
 
     def resizeEvent(self, event):
+        # Call the parent's resize event first to update the size
         super().resizeEvent(event)
+
+        # Apply stepped resize constraints to ensure the window maintains proper proportions
+        self._apply_stepped_resize_constraints()
+
         # Cancel any active thumb dragging when window is resized
         if self.scrollbar_manager.dragging_thumb:
             self.scrollbar_manager.end_thumb_drag()
@@ -2244,6 +2255,44 @@ class PlaylistWindow(QWidget):
             )
 
         self.update()  # Request a repaint
+
+    def _apply_stepped_resize_constraints(self):
+        """Apply stepped resize constraints to ensure window size follows proper dimensions."""
+        # Prevent recursive calls when applying constraints
+        if self._applying_resize_constraints:
+            return
+
+        # Get default size for minimum constraints
+        default_width = self.playlist_spec["layout"]["window"]["default_size"]["width"]
+        default_height = self.playlist_spec["layout"]["window"]["default_size"]["height"]
+
+        # Calculate what the constrained size should be based on current size
+        base_height = 58  # 20 (top bar) + 38 (bottom bar)
+        current_height = self.height()
+        if current_height > default_height:
+            resizable_height = current_height - base_height
+            num_steps = round(resizable_height / SCROLLBAR_GROOVE_HEIGHT)
+            constrained_height = base_height + (num_steps * SCROLLBAR_GROOVE_HEIGHT)
+        else:
+            constrained_height = default_height  # Maintain at least default size
+
+        # For width, snap to multiples of the bottom filler width (25px)
+        current_width = self.width()
+        filler_width = BOTTOM_FILLER_WIDTH  # PLEDIT_BOTTOM_BAR_FILLER width
+        if current_width > default_width:
+            resizable_amount = current_width - default_width
+            num_steps = round(resizable_amount / filler_width)
+            constrained_width = default_width + num_steps * filler_width
+        else:
+            constrained_width = default_width  # Ensure it doesn't go below default
+
+        # Only resize if the current size doesn't match the constraints
+        if self.width() != constrained_width or self.height() != constrained_height:
+            # Set flag to prevent recursive calls
+            self._applying_resize_constraints = True
+            self.resize(constrained_width, constrained_height)
+            # Reset flag after resize
+            self._applying_resize_constraints = False
 
     def scroll_up(self):
         if self.scroll_offset > 0:
