@@ -206,6 +206,25 @@
       }
     },
 
+    "nums_ex.bmp": {
+      "description": "Numeric glyphs (digits 0..9) and tiny minus/pad bits (alternative name for numbers.bmp)",
+      "size": { "width": 99, "height": 13 },
+      "sprites": {
+        "DIGITS": {
+          "pattern": {
+            "x": 0,
+            "y": 0,
+            "w": 9,
+            "h": 13,
+            "step_x": 9,
+            "count": 10
+          }
+        },
+        "NO_MINUS_SIGN": { "x": 9, "y": 6, "w": 5, "h": 1 },
+        "MINUS_SIGN": { "x": 20, "y": 6, "w": 5, "h": 1 }
+      }
+    },
+
     "titlebar.bmp": {
       "description": "Titlebar graphics and small control icons; hot area definitions are in PDF",
       "sprites": {

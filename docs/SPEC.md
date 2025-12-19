@@ -17,7 +17,7 @@ A cross-platform desktop application that renders Winamp Classic skins with pixe
 - **Titlebar**: Window controls (minimize, shade, close) from `titlebar.bmp`
 - **Transport Controls**: Previous, Play, Pause, Stop, Next, Eject from `cbuttons.bmp`
 - **Status Indicators**: Play/Pause/Stop indicators from `playpaus.bmp`
-- **Time Display**: Minutes/seconds using `numbers.bmp` digits
+- **Time Display**: Minutes/seconds using `numbers.bmp` or `nums_ex.bmp` digits
 - **Song Title**: Scrolling text display using `text.bmp` glyphs showing track metadata
 - **Visualization Area**: Placeholder for spectrum analyzer/oscilloscope
 - **Audio Info**: Bitrate and sample rate display from loaded track metadata
@@ -66,7 +66,7 @@ A cross-platform desktop application that renders Winamp Classic skins with pixe
 
 #### Text Rendering
 - **Fixed-width fonts**: 5x6 pixel characters from `text.bmp`
-- **Numeric display**: 9x13 pixel digits from `numbers.bmp`
+- **Numeric display**: 9x13 pixel digits from `numbers.bmp` or `nums_ex.bmp`
 - **Scrolling**: Smooth text scrolling for long song titles
 
 ### 5. Platform Recommendations

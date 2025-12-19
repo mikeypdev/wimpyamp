@@ -552,44 +552,57 @@ class Renderer:
         min_one = minutes % 10
         sec_ten = seconds // 10
         sec_one = seconds % 10
+
+        # Check for nums_ex.bmp first (some skins use this name), fall back to numbers.bmp
+        nums_ex_bmp_path = os.path.join(extracted_skin_dir, "nums_ex.bmp")
         numbers_bmp_path = os.path.join(extracted_skin_dir, "numbers.bmp")
-        if os.path.exists(numbers_bmp_path):
-            dest_area = main_window_spec["areas"]["minute_tens"]
-            self._draw_sprite_from_spec(
-                painter,
-                "numbers.bmp",
-                "DIGITS",
-                dest_area,
-                extracted_skin_dir,
-                pattern_index=min_ten,
-            )
-            dest_area = main_window_spec["areas"]["minute_ones"]
-            self._draw_sprite_from_spec(
-                painter,
-                "numbers.bmp",
-                "DIGITS",
-                dest_area,
-                extracted_skin_dir,
-                pattern_index=min_one,
-            )
-            dest_area = main_window_spec["areas"]["second_tens"]
-            self._draw_sprite_from_spec(
-                painter,
-                "numbers.bmp",
-                "DIGITS",
-                dest_area,
-                extracted_skin_dir,
-                pattern_index=sec_ten,
-            )
-            dest_area = main_window_spec["areas"]["second_ones"]
-            self._draw_sprite_from_spec(
-                painter,
-                "numbers.bmp",
-                "DIGITS",
-                dest_area,
-                extracted_skin_dir,
-                pattern_index=sec_one,
-            )
+
+        if os.path.exists(nums_ex_bmp_path):
+            # Use nums_ex.bmp if it exists
+            digit_sheet_name = "nums_ex.bmp"
+        elif os.path.exists(numbers_bmp_path):
+            # Fall back to numbers.bmp
+            digit_sheet_name = "numbers.bmp"
+        else:
+            # Neither file exists, skip rendering
+            return
+
+        dest_area = main_window_spec["areas"]["minute_tens"]
+        self._draw_sprite_from_spec(
+            painter,
+            digit_sheet_name,
+            "DIGITS",
+            dest_area,
+            extracted_skin_dir,
+            pattern_index=min_ten,
+        )
+        dest_area = main_window_spec["areas"]["minute_ones"]
+        self._draw_sprite_from_spec(
+            painter,
+            digit_sheet_name,
+            "DIGITS",
+            dest_area,
+            extracted_skin_dir,
+            pattern_index=min_one,
+        )
+        dest_area = main_window_spec["areas"]["second_tens"]
+        self._draw_sprite_from_spec(
+            painter,
+            digit_sheet_name,
+            "DIGITS",
+            dest_area,
+            extracted_skin_dir,
+            pattern_index=sec_ten,
+        )
+        dest_area = main_window_spec["areas"]["second_ones"]
+        self._draw_sprite_from_spec(
+            painter,
+            digit_sheet_name,
+            "DIGITS",
+            dest_area,
+            extracted_skin_dir,
+            pattern_index=sec_one,
+        )
 
     def _render_work_indicator(self, painter: QPainter, ui_state: UIState):
         main_window_spec = self.skin_data.spec_json["destinations"]["main_window"]
