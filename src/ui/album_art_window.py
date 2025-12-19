@@ -543,17 +543,10 @@ class AlbumArtWindow(QWidget):
                 )
 
                 if is_horizontally_docked:
-                    # When docked horizontally, snap to match the height of the main window group
-                    # For vertical resizing of horizontally docked windows, allow increments of main window height (116)
-                    main_height = self.main_window.height()  # Usually 116
-                    # Round to nearest multiple of main window height
-                    target_size = (
-                        (new_size + main_height // 2) // main_height
-                    ) * main_height
-                    # Ensure minimum size is maintained
-                    target_size = max(self.minimumWidth(), target_size)
+                    # When docked horizontally, snap to match the height of the main window
+                    target_size = self.main_window.height()
                 elif is_vertically_docked:
-                    # When docked vertically, snap to match the width of the main window group
+                    # When docked vertically, snap to match the width of the main window
                     target_size = self.main_window.width()
 
             # Also check for snapping to other docked windows like playlist or equalizer
@@ -591,12 +584,8 @@ class AlbumArtWindow(QWidget):
                 )
 
                 if is_horizontally_aligned_with_playlist:
-                    # When docked horizontally to playlist, snap to multiples of main window height
-                    main_height = self.main_window.height()  # Usually 116
-                    target_size = (
-                        (new_size + main_height // 2) // main_height
-                    ) * main_height
-                    target_size = max(self.minimumWidth(), target_size)
+                    # When docked horizontally to playlist, snap to match the playlist window height
+                    target_size = playlist_window.height()
                 elif is_vertically_aligned_with_playlist:
                     target_size = playlist_window.width()
 
@@ -632,23 +621,20 @@ class AlbumArtWindow(QWidget):
                 )
 
                 if is_horizontally_aligned_with_eq:
-                    # When docked horizontally to EQ, snap to multiples of main window height
-                    main_height = self.main_window.height()  # Usually 116
-                    target_size = (
-                        (new_size + main_height // 2) // main_height
-                    ) * main_height
-                    target_size = max(self.minimumWidth(), target_size)
+                    # When docked horizontally to EQ, snap to match the EQ window height
+                    target_size = eq_window.height()
                 elif is_vertically_aligned_with_eq:
                     target_size = eq_window.width()
 
-            # Use the calculated target size
-            new_size = target_size
-
-            # Make sure it's not smaller than minimum size
-            new_size = max(self.minimumWidth(), new_size)
-
-            # Apply the new size
-            self.resize(new_size, new_size)
+            # Use the target size if we're horizontally docked, otherwise maintain square aspect ratio
+            if target_size is not None:
+                # Ensure target size is not smaller than minimum size
+                target_size = max(self.minimumWidth(), target_size)
+                self.resize(target_size, target_size)
+            else:
+                # Maintain square aspect ratio normally
+                new_size = max(self.minimumWidth(), new_size)
+                self.resize(new_size, new_size)
             event.accept()
             return
         elif hasattr(self, "_dragging_window") and self._dragging_window:
@@ -729,8 +715,136 @@ class AlbumArtWindow(QWidget):
             # Only enforce square when not actively resizing (to avoid recursion)
             current_size = event.size()
             if current_size.width() != current_size.height():
-                square_size = min(current_size.width(), current_size.height())
-                self.resize(square_size, square_size)
+                # Check if we should snap to docked window size
+                target_size = None
+
+                # Check if docked to main window (horizontally or vertically)
+                if self.main_window:
+                    main_window_right = self.main_window.x() + self.main_window.width()
+                    main_window_bottom = self.main_window.y() + self.main_window.height()
+
+                    # Check horizontal docking (to left or right of main window)
+                    is_horizontally_docked = (
+                        (
+                            abs(self.x() - main_window_right) <= self.dock_margin
+                        )  # Docked to right of main
+                        or (
+                            abs((self.x() + self.width()) - self.main_window.x())
+                            <= self.dock_margin
+                        )  # Docked to left of main
+                    ) and (
+                        self.y() < main_window_bottom
+                        and (self.y() + self.height()) > self.main_window.y()
+                    )
+
+                    # Check vertical docking (above or below main window)
+                    is_vertically_docked = (
+                        (
+                            abs(self.y() - main_window_bottom) <= self.dock_margin
+                        )  # Docked below main
+                        or (
+                            abs((self.y() + self.height()) - self.main_window.y())
+                            <= self.dock_margin
+                        )  # Docked above main
+                    ) and (
+                        self.x() < main_window_right
+                        and (self.x() + self.width()) > self.main_window.x()
+                    )
+
+                    if is_horizontally_docked:
+                        # Snap to main window's height when horizontally docked
+                        target_size = self.main_window.height()
+                    elif is_vertically_docked:
+                        # Snap to main window's width when vertically docked (to maintain square aspect ratio)
+                        target_size = self.main_window.width()
+
+                # Check against playlist window if docked
+                if (
+                    not target_size and
+                    hasattr(self.main_window, "playlist_window")
+                    and self.main_window.playlist_window.isVisible()
+                ):
+                    playlist_window = self.main_window.playlist_window
+                    playlist_right = playlist_window.x() + playlist_window.width()
+                    playlist_bottom = playlist_window.y() + playlist_window.height()
+
+                    # Check horizontal docking with playlist
+                    is_horizontally_docked_to_playlist = (
+                        (abs(self.x() - playlist_right) <= self.dock_margin)
+                        or (
+                            abs((self.x() + self.width()) - playlist_window.x())
+                            <= self.dock_margin
+                        )
+                    ) and (
+                        self.y() < playlist_bottom
+                        and (self.y() + self.height()) > playlist_window.y()
+                    )
+
+                    # Check vertical docking with playlist
+                    is_vertically_docked_to_playlist = (
+                        (abs(self.y() - playlist_bottom) <= self.dock_margin)
+                        or (
+                            abs((self.y() + self.height()) - playlist_window.y())
+                            <= self.dock_margin
+                        )
+                    ) and (
+                        self.x() < playlist_right
+                        and (self.x() + self.width()) > playlist_window.x()
+                    )
+
+                    if is_horizontally_docked_to_playlist:
+                        # Snap to playlist's height when horizontally docked
+                        target_size = playlist_window.height()
+                    elif is_vertically_docked_to_playlist:
+                        # Snap to playlist's width when vertically docked (to maintain square aspect ratio)
+                        target_size = playlist_window.width()
+
+                # Check against equalizer window if docked
+                if (
+                    not target_size and
+                    hasattr(self.main_window, "equalizer_window")
+                    and self.main_window.equalizer_window.isVisible()
+                ):
+                    eq_window = self.main_window.equalizer_window
+                    eq_right = eq_window.x() + eq_window.width()
+                    eq_bottom = eq_window.y() + eq_window.height()
+
+                    # Check horizontal docking with equalizer
+                    is_horizontally_docked_to_eq = (
+                        (abs(self.x() - eq_right) <= self.dock_margin)
+                        or (
+                            abs((self.x() + self.width()) - eq_window.x())
+                            <= self.dock_margin
+                        )
+                    ) and (
+                        self.y() < eq_bottom and (self.y() + self.height()) > eq_window.y()
+                    )
+
+                    # Check vertical docking with equalizer
+                    is_vertically_docked_to_eq = (
+                        (abs(self.y() - eq_bottom) <= self.dock_margin)
+                        or (
+                            abs((self.y() + self.height()) - eq_window.y())
+                            <= self.dock_margin
+                        )
+                    ) and (
+                        self.x() < eq_right and (self.x() + self.width()) > eq_window.x()
+                    )
+
+                    if is_horizontally_docked_to_eq:
+                        # Snap to equalizer's height when horizontally docked
+                        target_size = eq_window.height()
+                    elif is_vertically_docked_to_eq:
+                        # Snap to equalizer's width when vertically docked (to maintain square aspect ratio)
+                        target_size = eq_window.width()
+
+                # If we're horizontally docked to a window, use its height as target size
+                if target_size is not None:
+                    self.resize(target_size, target_size)
+                else:
+                    # Otherwise, enforce square aspect ratio by default
+                    square_size = min(current_size.width(), current_size.height())
+                    self.resize(square_size, square_size)
 
         # Save the album art window size to preferences
         # Only save if the window is visible (to avoid saving during initialization)
