@@ -721,7 +721,9 @@ class AlbumArtWindow(QWidget):
                 # Check if docked to main window (horizontally or vertically)
                 if self.main_window:
                     main_window_right = self.main_window.x() + self.main_window.width()
-                    main_window_bottom = self.main_window.y() + self.main_window.height()
+                    main_window_bottom = (
+                        self.main_window.y() + self.main_window.height()
+                    )
 
                     # Check horizontal docking (to left or right of main window)
                     is_horizontally_docked = (
@@ -760,8 +762,8 @@ class AlbumArtWindow(QWidget):
 
                 # Check against playlist window if docked
                 if (
-                    not target_size and
-                    hasattr(self.main_window, "playlist_window")
+                    not target_size
+                    and hasattr(self.main_window, "playlist_window")
                     and self.main_window.playlist_window.isVisible()
                 ):
                     playlist_window = self.main_window.playlist_window
@@ -801,8 +803,8 @@ class AlbumArtWindow(QWidget):
 
                 # Check against equalizer window if docked
                 if (
-                    not target_size and
-                    hasattr(self.main_window, "equalizer_window")
+                    not target_size
+                    and hasattr(self.main_window, "equalizer_window")
                     and self.main_window.equalizer_window.isVisible()
                 ):
                     eq_window = self.main_window.equalizer_window
@@ -817,7 +819,8 @@ class AlbumArtWindow(QWidget):
                             <= self.dock_margin
                         )
                     ) and (
-                        self.y() < eq_bottom and (self.y() + self.height()) > eq_window.y()
+                        self.y() < eq_bottom
+                        and (self.y() + self.height()) > eq_window.y()
                     )
 
                     # Check vertical docking with equalizer
@@ -828,7 +831,8 @@ class AlbumArtWindow(QWidget):
                             <= self.dock_margin
                         )
                     ) and (
-                        self.x() < eq_right and (self.x() + self.width()) > eq_window.x()
+                        self.x() < eq_right
+                        and (self.x() + self.width()) > eq_window.x()
                     )
 
                     if is_horizontally_docked_to_eq:

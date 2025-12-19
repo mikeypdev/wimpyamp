@@ -2264,7 +2264,9 @@ class PlaylistWindow(QWidget):
 
         # Get default size for minimum constraints
         default_width = self.playlist_spec["layout"]["window"]["default_size"]["width"]
-        default_height = self.playlist_spec["layout"]["window"]["default_size"]["height"]
+        default_height = self.playlist_spec["layout"]["window"]["default_size"][
+            "height"
+        ]
 
         # Calculate what the constrained size should be based on current size
         base_height = 58  # 20 (top bar) + 38 (bottom bar)
