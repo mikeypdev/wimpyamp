@@ -30,6 +30,11 @@ class SkinParser:
         return self.skin_data
 
     def _extract_skin_files(self) -> bool:
+        # Check if the file or directory exists before attempting to process it
+        if not os.path.exists(self.skin_path):
+            print(f"ERROR: Skin file/directory does not exist: {self.skin_path}")
+            return False
+
         if os.path.isdir(self.skin_path):
             self.skin_data.extracted_skin_dir = self.skin_path
             return True
