@@ -22,7 +22,9 @@ WimPyAmp also has support for Album Art. Click "I" in the main window clutter ba
 
 To load a new skin or reload the default skin, either choose the Settings menu, or click “O” in the main window clutter bar.
 
-Releases are available for Mac on Intel and Apple Silicon. It should also work on Linux and Windows, but it has not been tested.
+Releases are available for Mac on Intel and Apple Silicon. WimPyAmp also works on Linux and Windows (see Developer Notes below).
+
+Note that Linux users will usually need to hold down the Super key (CMD/WIN) while using the mouse to move the app windows, as they have a frameless UI design. Snapping and docking is not supported on Linux for similar reasons.
 
 ## Features and Bugs
 
@@ -40,25 +42,31 @@ A: You have a CD/DVD drive? Wow. I’ll keep it in mind.
 
 ### Python
 
-This was developed on an old Intel Mac using Python 3.13, as well an Apple Silicon Mac using Python 3.14. The core audio library is the amazing librosa, and UI is PySide6 (Python QT).
+This was developed on an Intel Mac using Python 3.13, as well an Apple Silicon Mac using Python 3.14. The core audio library is the amazing librosa, and UI is PySide6 (Python QT).
 
 Intel Mac support is fading away, so pay attention to supported libraries if you are on an old Mac.
 
 ### Makefile
 
-There's a Makefile in the project that should handle everything. After cloning the repo, just run `make setup` to install dependencies and create the venv, then run `make run`.
+There's a Makefile in the project that should handle everything for Mac and Linux users. After cloning the repo, just run `make setup` to install dependencies and create the venv, then run `make run`.
 
 Type `make help` to see other options, like linting or making an app bundle or binary.
 
+Windows users can either install WSL to use the Makefile, or use Powershell scripts in the `winscripts/` directory and tools in Visual Studio Code. Don’t forget to install Python via the MS Store.
+
 ### AI Coding Agents
 
-This project was entirely coded by AI agents, mostly Gemini and Qwen, using spec-driven development (it was *not* “vibe-coded”). If you read the generated code, you'll see that it's really just a framework for some excellent Python libraries, including librosa, mutagen, Pillow, and others, and connects them to a PySide6 UI that renders bitmaps from Winamp skin archives.
-
-This project could not have been made without those awesome libraries or the Webamp project, which archived key documents for the Winamp skin specification, as well as provided a reference implementation for the mini-visualizer.
+This project was entirely coded by AI agents, mostly Gemini and Qwen, using spec-driven development (*not* “vibe-coding”). It's really just a framework for some excellent Python libraries, including librosa, mutagen, Pillow, and others, connected to a PySide6 UI that renders bitmaps from Winamp skin archives.
 
 The specs are in the `docs/` directory, along with some original Winamp skinning guidelines. If you add a feature, you must create a spec first. Let the AI help you, and force the AI to review it before implementation.
 
 There is an `AGENT-lite.md` file that attempts to provide low-capability agents with instructions to avoid doing dumb things. It kinda works, sometimes.
+
+### Thanks
+
+Special thanks to the Webamp project, which archived key documents for the Winamp skin specification, as well as provided a reference implementation for the mini-visualizer.
+
+And thanks to the thousands of people who created really cool Winamp skins 25 years ago.
 
 ## License
 
