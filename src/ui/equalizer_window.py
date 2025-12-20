@@ -444,7 +444,7 @@ class EqualizerWindow(QWidget):
         # Draw background
         background_spec = self.eq_spec_json["sprites"]["EQMAIN"]["background"]
         background_pixmap = self.sprite_manager.load_sprite(
-            os.path.join(self.extracted_skin_dir, "EQMAIN.BMP"),
+            self.skin_data.get_path("EQMAIN.BMP"),
             background_spec["x"],
             background_spec["y"],
             background_spec["w"],
@@ -459,7 +459,7 @@ class EqualizerWindow(QWidget):
         ]  # Assuming selected for now
         titlebar_dest = self.eq_spec_json["destinations"]["titlebar"]
         titlebar_pixmap = self.sprite_manager.load_sprite(
-            os.path.join(self.extracted_skin_dir, "EQMAIN.BMP"),
+            self.skin_data.get_path("EQMAIN.BMP"),
             titlebar_spec["x"],
             titlebar_spec["y"],
             titlebar_spec["w"],
@@ -502,7 +502,7 @@ class EqualizerWindow(QWidget):
             "graph_background"
         ]
         graph_background_pixmap = self.sprite_manager.load_sprite(
-            os.path.join(self.extracted_skin_dir, "EQMAIN.BMP"),
+            self.skin_data.get_path("EQMAIN.BMP"),
             graph_background_spec["x"],
             graph_background_spec["y"],
             graph_background_spec["w"],
@@ -519,7 +519,7 @@ class EqualizerWindow(QWidget):
             "graph_line_colors"
         ]
         graph_line_colors_pixmap = self.sprite_manager.load_sprite(
-            os.path.join(self.extracted_skin_dir, "EQMAIN.BMP"),
+            self.skin_data.get_path("EQMAIN.BMP"),
             graph_line_colors_spec["x"],
             graph_line_colors_spec["y"],
             graph_line_colors_spec["w"],
@@ -558,7 +558,7 @@ class EqualizerWindow(QWidget):
         # Draw preamp line
         preamp_line_spec = self.eq_spec_json["sprites"]["EQMAIN"]["preamp_line"]
         preamp_line_pixmap = self.sprite_manager.load_sprite(
-            os.path.join(self.extracted_skin_dir, "EQMAIN.BMP"),
+            self.skin_data.get_path("EQMAIN.BMP"),
             preamp_line_spec["x"],
             preamp_line_spec["y"],
             preamp_line_spec["w"],
@@ -648,7 +648,7 @@ class EqualizerWindow(QWidget):
         sprite_info = self.eq_spec_json["sprites"]["EQMAIN"][sprite_name]
         dest = self.eq_spec_json["destinations"][button_name]
         pixmap = self.sprite_manager.load_sprite(
-            os.path.join(self.extracted_skin_dir, "EQMAIN.BMP"),
+            self.skin_data.get_path("EQMAIN.BMP"),
             sprite_info["x"],
             sprite_info["y"],
             sprite_info["w"],
@@ -676,7 +676,7 @@ class EqualizerWindow(QWidget):
             slider_bar_index
         ]
         slider_bar_pixmap = self.sprite_manager.load_sprite(
-            os.path.join(self.extracted_skin_dir, "EQMAIN.BMP"),
+            self.skin_data.get_path("EQMAIN.BMP"),
             slider_bar_spec["x"],
             slider_bar_spec["y"],
             slider_bar_spec["w"],
@@ -688,7 +688,7 @@ class EqualizerWindow(QWidget):
         # Draw the slider thumb
         knob_sprite_info = self.eq_spec_json["sprites"]["EQMAIN"]["slider_thumb"]
         knob_pixmap = self.sprite_manager.load_sprite(
-            os.path.join(self.extracted_skin_dir, "EQMAIN.BMP"),
+            self.skin_data.get_path("EQMAIN.BMP"),
             knob_sprite_info["x"],
             knob_sprite_info["y"],
             knob_sprite_info["w"],

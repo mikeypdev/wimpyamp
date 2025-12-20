@@ -6,6 +6,7 @@ from PIL import Image
 class SpriteManager:
     def __init__(self):
         self.cache = {}  # Cache for QPixmap objects
+        self.invalid_sprite_cache = set()
 
     def load_sprite(self, image_path, x, y, w, h, transparency_color=None):
         """
@@ -100,3 +101,5 @@ class SpriteManager:
 
     def clear_cache(self):
         self.cache.clear()
+        self.invalid_sprite_cache.clear()
+        self.invalid_sprite_cache.clear()

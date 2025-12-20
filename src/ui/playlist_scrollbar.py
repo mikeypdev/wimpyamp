@@ -6,11 +6,11 @@ from ..utils.color import MAGENTA_TRANSPARENCY_RGB
 
 
 class ScrollbarManager:
-    def __init__(self, window, playlist_spec, sprite_manager, extracted_skin_dir):
+    def __init__(self, window, playlist_spec, sprite_manager, skin_data):
         self.window = window
         self.playlist_spec = playlist_spec
         self.sprite_manager = sprite_manager
-        self.extracted_skin_dir = extracted_skin_dir
+        self.skin_data = skin_data
 
         # State for scrollbar elements
         self.pressed_elements = {}  # Stores {element_id: True/False}
@@ -69,17 +69,13 @@ class ScrollbarManager:
 
     def _get_sprite_pixmap(self, sprite_id):
         """Helper to get a QPixmap for a given sprite ID from the spec."""
-        if (
-            not self.sprite_manager
-            or not self.extracted_skin_dir
-            or not self.playlist_spec
-        ):
+        if not self.sprite_manager or not self.skin_data or not self.playlist_spec:
             return None
 
-        pledit_bmp_path = os.path.join(
-            self.extracted_skin_dir, self.playlist_spec["spriteSheet"]["file"]
+        pledit_bmp_path = self.skin_data.get_path(
+            self.playlist_spec["spriteSheet"]["file"]
         )
-        if not os.path.exists(pledit_bmp_path):
+        if not pledit_bmp_path or not os.path.exists(pledit_bmp_path):
             print(f"WARNING: {self.playlist_spec['spriteSheet']['file']} not found.")
             return None
 

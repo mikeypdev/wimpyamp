@@ -5,7 +5,7 @@ import os
 class TextRenderer:
     def __init__(self, skin_data):
         self.skin_data = skin_data
-        self.text_bmp_path = os.path.join(self.skin_data.extracted_skin_dir, "TEXT.BMP")
+        self.text_bmp_path = self.skin_data.get_path("TEXT.BMP")
         self.text_bmp_image = None
         self.glyph_cache = {}  # Cache for individual glyph QPixmaps
 
@@ -122,7 +122,7 @@ class TextRenderer:
         """
         Loads TEXT.BMP and converts it to an RGBA PIL Image.
         """
-        if not os.path.exists(self.text_bmp_path):
+        if not self.text_bmp_path or not os.path.exists(self.text_bmp_path):
             print(f"WARNING: TEXT.BMP not found at {self.text_bmp_path}")
             return
 

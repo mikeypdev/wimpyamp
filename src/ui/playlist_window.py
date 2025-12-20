@@ -75,7 +75,7 @@ class PlaylistWindow(QWidget):
 
         # Initialize UI component managers
         self.scrollbar_manager = ScrollbarManager(
-            self, self.playlist_spec, self.sprite_manager, self.extracted_skin_dir
+            self, self.playlist_spec, self.sprite_manager, self.skin_data
         )
         self.menu_manager = MenuManager(self, self.playlist_spec)
         self.buttonbar_manager = ButtonBarManager(self, self.playlist_spec)
@@ -468,11 +468,9 @@ class PlaylistWindow(QWidget):
         return self.scrollbar_manager.get_element_rect(element_id)
 
     def _load_pledit_colors(self):
-        pledit_txt_path = os.path.join(self.extracted_skin_dir, "pledit.txt")
-        if not os.path.exists(pledit_txt_path):
-            print(
-                f"WARNING: pledit.txt not found at {pledit_txt_path}. Using default colors."
-            )
+        pledit_txt_path = self.skin_data.get_path("pledit.txt")
+        if not pledit_txt_path or not os.path.exists(pledit_txt_path):
+            print("WARNING: pledit.txt not found. Using default colors.")
             return
 
         try:
@@ -495,13 +493,11 @@ class PlaylistWindow(QWidget):
             print(f"Error loading pledit.txt colors: {e}. Using default colors.")
 
     def _load_playlist_font_settings(self):
-        pledit_txt_path = os.path.join(self.extracted_skin_dir, "pledit.txt")
+        pledit_txt_path = self.skin_data.get_path("pledit.txt")
 
         # Check if pledit.txt exists
-        if not os.path.exists(pledit_txt_path):
-            print(
-                f"WARNING: pledit.txt not found at {pledit_txt_path}. Using default font settings."
-            )
+        if not pledit_txt_path or not os.path.exists(pledit_txt_path):
+            print("WARNING: pledit.txt not found. Using default font settings.")
             return
 
         try:
@@ -568,10 +564,10 @@ class PlaylistWindow(QWidget):
         ):
             return None
 
-        pledit_bmp_path = os.path.join(
-            self.extracted_skin_dir, self.playlist_spec["spriteSheet"]["file"]
+        pledit_bmp_path = self.skin_data.get_path(
+            self.playlist_spec["spriteSheet"]["file"]
         )
-        if not os.path.exists(pledit_bmp_path):
+        if not pledit_bmp_path or not os.path.exists(pledit_bmp_path):
             print(f"WARNING: {self.playlist_spec['spriteSheet']['file']} not found.")
             return None
 

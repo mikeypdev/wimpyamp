@@ -62,7 +62,6 @@ class Renderer:
         sheet_name,
         sprite_id,
         dest_area,
-        extracted_skin_dir,
         transparency_color=MAGENTA_TRANSPARENCY_RGB,
         sprite_x=None,
         sprite_y=None,
@@ -72,9 +71,9 @@ class Renderer:
     ):
         """Helper to draw a sprite given its sheet, sprite ID, and destination area."""
         spec = self.skin_data.spec_json
-        sheet_path = os.path.join(extracted_skin_dir, sheet_name)
-        if not os.path.exists(sheet_path):
-            print(f"WARNING: {sheet_name} not found in {extracted_skin_dir}")
+        sheet_path = self.skin_data.get_path(sheet_name)
+        if not sheet_path or not os.path.exists(sheet_path):
+            print(f"WARNING: {sheet_name} not found.")
             return
 
         try:
@@ -99,12 +98,17 @@ class Renderer:
                     sprite_h = int(sprite_spec["h"])
 
             # Use sprite validator to check if the sprite coordinates are valid in the actual BMP file
+            cache_key = (sheet_path, sprite_x, sprite_y, sprite_w, sprite_h)
+            if cache_key in self.sprite_manager.invalid_sprite_cache:
+                return
+
             if not validate_sprite_in_bmp(
                 sheet_path, sprite_x, sprite_y, sprite_w, sprite_h
             ):
                 print(
                     f"WARNING: Sprite '{sprite_id}' at coordinates ({sprite_x}, {sprite_y}, {sprite_w}x{sprite_h}) is out of bounds in {sheet_path}. Skipping."
                 )
+                self.sprite_manager.invalid_sprite_cache.add(cache_key)
                 return
 
             pixmap = self.sprite_manager.load_sprite(
@@ -162,9 +166,8 @@ class Renderer:
                 self._render_visualization(painter)
 
     def _render_background(self, painter: QPainter):
-        extracted_skin_dir = self.skin_data.extracted_skin_dir
-        main_bmp_path = os.path.join(extracted_skin_dir, "main.bmp")
-        if os.path.exists(main_bmp_path):
+        main_bmp_path = self.skin_data.get_path("main.bmp")
+        if main_bmp_path and os.path.exists(main_bmp_path):
             background_pixmap = self.sprite_manager.load_sprite(
                 main_bmp_path,
                 0,
@@ -175,18 +178,16 @@ class Renderer:
             )
             painter.drawPixmap(0, 0, background_pixmap)
         else:
-            print(f"WARNING: main.bmp not found in {extracted_skin_dir}")
+            print(f"WARNING: main.bmp not found in {self.skin_data.extracted_skin_dir}")
 
     def _render_titlebar(self, painter: QPainter):
         main_window_spec = self.skin_data.spec_json["destinations"]["main_window"]
-        extracted_skin_dir = self.skin_data.extracted_skin_dir
         dest_area = main_window_spec["areas"]["titlebar"]
         self._draw_sprite_from_spec(
-            painter, "titlebar.bmp", "TITLEBAR_NORMAL", dest_area, extracted_skin_dir
+            painter, "titlebar.bmp", "TITLEBAR_NORMAL", dest_area
         )
 
     def _render_clutterbar(self, painter: QPainter, ui_state: UIState):
-        extracted_skin_dir = self.skin_data.extracted_skin_dir
         sprite_id = "CLUTTERBAR_NORMAL"
         if ui_state.is_options_pressed:
             sprite_id = "CLUTTERBAR_OPTIONS_PRESSED"
@@ -199,8 +200,8 @@ class Renderer:
         elif ui_state.is_visualization_menu_pressed:
             sprite_id = "CLUTTERBAR_VISUALIZATION_PRESSED"
 
-        titlebar_bmp_path = os.path.join(extracted_skin_dir, "titlebar.bmp")
-        if os.path.exists(titlebar_bmp_path):
+        titlebar_bmp_path = self.skin_data.get_path("titlebar.bmp")
+        if titlebar_bmp_path and os.path.exists(titlebar_bmp_path):
             sprite_x, sprite_y = 304, 0
             if sprite_id == "CLUTTERBAR_NORMAL":
                 sprite_x, sprite_y = 304, 0
@@ -227,7 +228,6 @@ class Renderer:
 
     def _render_transport_buttons(self, painter: QPainter, ui_state: UIState):
         main_window_spec = self.skin_data.spec_json["destinations"]["main_window"]
-        extracted_skin_dir = self.skin_data.extracted_skin_dir
         controls = main_window_spec["areas"]["controls"]
         for control in controls:
             dest_area = {
@@ -252,21 +252,16 @@ class Renderer:
                 "cbuttons.bmp",
                 current_sprite_id,
                 dest_area,
-                extracted_skin_dir,
             )
 
     def _render_eject_button(self, painter: QPainter, ui_state: UIState):
         main_window_spec = self.skin_data.spec_json["destinations"]["main_window"]
-        extracted_skin_dir = self.skin_data.extracted_skin_dir
         dest_area = main_window_spec["areas"]["eject"]
         eject_sprite_id = "EJECT_PRESSED" if ui_state.is_eject_pressed else "EJECT"
-        self._draw_sprite_from_spec(
-            painter, "cbuttons.bmp", eject_sprite_id, dest_area, extracted_skin_dir
-        )
+        self._draw_sprite_from_spec(painter, "cbuttons.bmp", eject_sprite_id, dest_area)
 
     def _render_shuffle_repeat_eq_pl(self, painter: QPainter, ui_state: UIState):
         main_window_spec = self.skin_data.spec_json["destinations"]["main_window"]
-        extracted_skin_dir = self.skin_data.extracted_skin_dir
         dest_area = main_window_spec["areas"]["shuffle_dest"]
         shuffle_sprite_id = "SHUFFLE_OFF"
         if ui_state.shuffle_on:
@@ -274,7 +269,7 @@ class Renderer:
         if ui_state.is_shuffle_pressed:
             shuffle_sprite_id += "_PRESSED"
         self._draw_sprite_from_spec(
-            painter, "shufrep.bmp", shuffle_sprite_id, dest_area, extracted_skin_dir
+            painter, "shufrep.bmp", shuffle_sprite_id, dest_area
         )
         dest_area = main_window_spec["areas"]["repeat_dest"]
         repeat_sprite_id = "REPEAT_OFF"
@@ -282,61 +277,46 @@ class Renderer:
             repeat_sprite_id = "REPEAT_ON"
         if ui_state.is_repeat_pressed:
             repeat_sprite_id += "_PRESSED"
-        self._draw_sprite_from_spec(
-            painter, "shufrep.bmp", repeat_sprite_id, dest_area, extracted_skin_dir
-        )
+        self._draw_sprite_from_spec(painter, "shufrep.bmp", repeat_sprite_id, dest_area)
         dest_area = main_window_spec["areas"]["eq_button"]
         eq_sprite_id = "EQ_OFF"
         if ui_state.eq_button_on:
             eq_sprite_id = "EQ_ON"
         if ui_state.is_eq_pressed:
             eq_sprite_id += "_PRESSED"
-        self._draw_sprite_from_spec(
-            painter, "shufrep.bmp", eq_sprite_id, dest_area, extracted_skin_dir
-        )
+        self._draw_sprite_from_spec(painter, "shufrep.bmp", eq_sprite_id, dest_area)
         dest_area = main_window_spec["areas"]["playlist_button"]
         pl_sprite_id = "PL_OFF"
         if ui_state.playlist_button_on:
             pl_sprite_id = "PL_ON"
         if ui_state.is_playlist_pressed:
             pl_sprite_id += "_PRESSED"
-        self._draw_sprite_from_spec(
-            painter, "shufrep.bmp", pl_sprite_id, dest_area, extracted_skin_dir
-        )
+        self._draw_sprite_from_spec(painter, "shufrep.bmp", pl_sprite_id, dest_area)
 
     def _render_mono_stereo(self, painter: QPainter, ui_state: UIState):
         main_window_spec = self.skin_data.spec_json["destinations"]["main_window"]
-        extracted_skin_dir = self.skin_data.extracted_skin_dir
         if ui_state.is_stereo:
             dest_area = main_window_spec["areas"]["stereo_indicator"]
-            self._draw_sprite_from_spec(
-                painter, "monoster.bmp", "STEREO_ON", dest_area, extracted_skin_dir
-            )
+            self._draw_sprite_from_spec(painter, "monoster.bmp", "STEREO_ON", dest_area)
             dest_area = main_window_spec["areas"]["mono_indicator"]
-            self._draw_sprite_from_spec(
-                painter, "monoster.bmp", "MONO_OFF", dest_area, extracted_skin_dir
-            )
+            self._draw_sprite_from_spec(painter, "monoster.bmp", "MONO_OFF", dest_area)
         else:
             dest_area = main_window_spec["areas"]["stereo_indicator"]
             self._draw_sprite_from_spec(
-                painter, "monoster.bmp", "STEREO_OFF", dest_area, extracted_skin_dir
+                painter, "monoster.bmp", "STEREO_OFF", dest_area
             )
             dest_area = main_window_spec["areas"]["mono_indicator"]
-            self._draw_sprite_from_spec(
-                painter, "monoster.bmp", "MONO_ON", dest_area, extracted_skin_dir
-            )
+            self._draw_sprite_from_spec(painter, "monoster.bmp", "MONO_ON", dest_area)
 
     def _render_sliders_tracks(self, painter: QPainter, ui_state: UIState):
         main_window_spec = self.skin_data.spec_json["destinations"]["main_window"]
         spec = self.skin_data.spec_json
-        extracted_skin_dir = self.skin_data.extracted_skin_dir
         dest_area_pos_track = main_window_spec["areas"]["position_track"]
         self._draw_sprite_from_spec(
             painter,
             "posbar.bmp",
             "POSITION_TRACK",
             dest_area_pos_track,
-            extracted_skin_dir,
         )
         position_thumb_spec = spec["sheets"]["posbar.bmp"]["sprites"]["POSITION_THUMB"]
         thumb_w_pos = position_thumb_spec["w"]
@@ -355,7 +335,6 @@ class Renderer:
                 "w": thumb_w_pos,
                 "h": thumb_h_pos,
             },
-            extracted_skin_dir,
             sprite_x=position_thumb_spec["x"],
             sprite_y=position_thumb_spec["y"],
             sprite_w=thumb_w_pos,
@@ -376,7 +355,6 @@ class Renderer:
             "volume.bmp",
             "VOLUME_FRAMES",
             dest_area_vol,
-            extracted_skin_dir,
             sprite_x=vol_sprite_x,
             sprite_y=vol_sprite_y,
             sprite_w=vol_sprite_w,
@@ -400,7 +378,6 @@ class Renderer:
             "volume.bmp",
             volume_thumb_sprite_id,
             {"x": thumb_dest_x, "y": thumb_dest_y, "w": thumb_w, "h": thumb_h},
-            extracted_skin_dir,
             sprite_x=volume_thumb_coords["x"],
             sprite_y=volume_thumb_coords["y"],
             sprite_w=thumb_w,
@@ -484,7 +461,6 @@ class Renderer:
             balance_sheet,
             balance_sprite_id,
             dest_area_balance,
-            extracted_skin_dir,
             sprite_x=balance_sprite_x,
             sprite_y=balance_sprite_y,
             sprite_w=balance_sprite_w,
@@ -514,7 +490,6 @@ class Renderer:
                 "w": thumb_w,
                 "h": thumb_h,
             },
-            extracted_skin_dir,
             sprite_x=thumb_sprite_coords["x"],
             sprite_y=thumb_sprite_coords["y"],
             sprite_w=thumb_w,
@@ -542,7 +517,6 @@ class Renderer:
 
     def _render_time_display(self, painter: QPainter, ui_state: UIState):
         main_window_spec = self.skin_data.spec_json["destinations"]["main_window"]
-        extracted_skin_dir = self.skin_data.extracted_skin_dir
         current_time_seconds = (
             int(ui_state.position * ui_state.duration) if ui_state.duration > 0 else 0
         )
@@ -554,16 +528,11 @@ class Renderer:
         sec_one = seconds % 10
 
         # Check for nums_ex.bmp first (some skins use this name), fall back to numbers.bmp
-        nums_ex_bmp_path = os.path.join(extracted_skin_dir, "nums_ex.bmp")
-        numbers_bmp_path = os.path.join(extracted_skin_dir, "numbers.bmp")
-
-        if os.path.exists(nums_ex_bmp_path):
-            # Use nums_ex.bmp if it exists
-            digit_sheet_name = "nums_ex.bmp"
-        elif os.path.exists(numbers_bmp_path):
-            # Fall back to numbers.bmp
+        digit_sheet_name = "nums_ex.bmp"
+        if not self.skin_data.get_path(digit_sheet_name):
             digit_sheet_name = "numbers.bmp"
-        else:
+
+        if not self.skin_data.get_path(digit_sheet_name):
             # Neither file exists, skip rendering
             return
 
@@ -573,7 +542,6 @@ class Renderer:
             digit_sheet_name,
             "DIGITS",
             dest_area,
-            extracted_skin_dir,
             pattern_index=min_ten,
         )
         dest_area = main_window_spec["areas"]["minute_ones"]
@@ -582,7 +550,6 @@ class Renderer:
             digit_sheet_name,
             "DIGITS",
             dest_area,
-            extracted_skin_dir,
             pattern_index=min_one,
         )
         dest_area = main_window_spec["areas"]["second_tens"]
@@ -591,7 +558,6 @@ class Renderer:
             digit_sheet_name,
             "DIGITS",
             dest_area,
-            extracted_skin_dir,
             pattern_index=sec_ten,
         )
         dest_area = main_window_spec["areas"]["second_ones"]
@@ -600,13 +566,11 @@ class Renderer:
             digit_sheet_name,
             "DIGITS",
             dest_area,
-            extracted_skin_dir,
             pattern_index=sec_one,
         )
 
     def _render_work_indicator(self, painter: QPainter, ui_state: UIState):
         main_window_spec = self.skin_data.spec_json["destinations"]["main_window"]
-        extracted_skin_dir = self.skin_data.extracted_skin_dir
         dest_area = main_window_spec["areas"]["play_indicator_area"]
         if ui_state.is_playing and not ui_state.is_paused:
             sprite_id = "PLAY_INDICATOR"
@@ -614,9 +578,7 @@ class Renderer:
             sprite_id = "PAUSE_INDICATOR"
         else:
             sprite_id = "STOP_INDICATOR"
-        self._draw_sprite_from_spec(
-            painter, "playpaus.bmp", sprite_id, dest_area, extracted_skin_dir
-        )
+        self._draw_sprite_from_spec(painter, "playpaus.bmp", sprite_id, dest_area)
 
     def _render_bitrate_sample(self, painter: QPainter, ui_state: UIState):
         main_window_spec = self.skin_data.spec_json["destinations"]["main_window"]
