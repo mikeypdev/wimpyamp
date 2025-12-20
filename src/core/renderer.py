@@ -98,12 +98,17 @@ class Renderer:
                     sprite_h = int(sprite_spec["h"])
 
             # Use sprite validator to check if the sprite coordinates are valid in the actual BMP file
+            cache_key = (sheet_path, sprite_x, sprite_y, sprite_w, sprite_h)
+            if cache_key in self.sprite_manager.invalid_sprite_cache:
+                return
+
             if not validate_sprite_in_bmp(
                 sheet_path, sprite_x, sprite_y, sprite_w, sprite_h
             ):
                 print(
                     f"WARNING: Sprite '{sprite_id}' at coordinates ({sprite_x}, {sprite_y}, {sprite_w}x{sprite_h}) is out of bounds in {sheet_path}. Skipping."
                 )
+                self.sprite_manager.invalid_sprite_cache.add(cache_key)
                 return
 
             pixmap = self.sprite_manager.load_sprite(
