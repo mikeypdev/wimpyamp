@@ -32,7 +32,6 @@ __pycache__/
 .coverage
 htmlcov/
 .hypothesis/
-.vscode/
 .idea/
 *.swp
 *.swo

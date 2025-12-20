@@ -1,0 +1,16 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run WimPyAmp (venv)",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/run_wimpyamp.py",
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "env": {
+        "PYTHONPATH": "."
+      }
+    }
+  ]
+}

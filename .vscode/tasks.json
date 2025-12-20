@@ -1,0 +1,41 @@
+// Windows-specific tasks (PowerShell). On macOS/Linux use the Makefile.
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Setup (winscripts)",
+      "type": "process",
+      "command": "powershell",
+      "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}\\winscripts\\setup.ps1"],
+      "group": "build",
+      "problemMatcher": [],
+      "detail": "Windows-only (PowerShell)."
+    },
+    {
+      "label": "Run WimPyAmp",
+      "type": "process",
+      "command": "powershell",
+      "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}\\winscripts\\run.ps1"],
+      "group": "none",
+      "presentation": { "panel": "dedicated" },
+      "problemMatcher": [],
+      "detail": "Windows-only (PowerShell)."
+    },
+    {
+      "label": "Lint (ruff)",
+      "type": "process",
+      "command": "${workspaceFolder}\\venv\\Scripts\\python",
+      "args": ["-m", "ruff", "check", "."],
+      "problemMatcher": [],
+      "detail": "Windows path to venv shown."
+    },
+    {
+      "label": "Test (pytest)",
+      "type": "process",
+      "command": "${workspaceFolder}\\venv\\Scripts\\python",
+      "args": ["-m", "pytest", "tests", "-v"],
+      "problemMatcher": [],
+      "detail": "Windows path to venv shown."
+    }
+  ]
+}
