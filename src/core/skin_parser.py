@@ -21,8 +21,8 @@ class SkinParser:
         self._load_viscolor_data()
         self._load_region_data()
 
-        main_bmp_full_path = os.path.join(self.skin_data.extracted_skin_dir, "main.bmp")
-        if os.path.exists(main_bmp_full_path):
+        main_bmp_full_path = self.skin_data.get_path("main.bmp")
+        if main_bmp_full_path and os.path.exists(main_bmp_full_path):
             self.skin_data.main_bmp_path = main_bmp_full_path
         else:
             print(f"WARNING: main.bmp not found in {self.skin_data.extracted_skin_dir}")
@@ -70,11 +70,18 @@ class SkinParser:
                 else:
                     extracted_skin_dir = temp_extract_dir
 
+                self.skin_data.extracted_skin_dir = extracted_skin_dir
+
+                # Create a case-insensitive mapping of the files.
+                self.skin_data.file_mapping = {
+                    f.lower(): f for f in os.listdir(extracted_skin_dir)
+                }
+
                 # Validate that this directory contains essential skin files
                 if self._validate_skin_directory(extracted_skin_dir):
-                    self.skin_data.extracted_skin_dir = extracted_skin_dir
                     return True
                 else:
+                    self.skin_data.extracted_skin_dir = None
                     print(
                         f"ERROR: {self.skin_path} does not contain valid Winamp skin data."
                     )
@@ -104,17 +111,19 @@ class SkinParser:
         # At minimum, a Winamp skin must have main.bmp (the main window background)
         required_files = ["main.bmp"]
 
-        # Check for required files
+        # Check for required files (case-insensitively)
         for required_file in required_files:
-            required_path = os.path.join(skin_dir, required_file)
-            if not os.path.exists(required_path):
+            if required_file.lower() not in self.skin_data.file_mapping:
                 print(
                     f"INFO: Required skin file '{required_file}' not found in {skin_dir}"
                 )
                 return False
 
         # Additional check: verify that main.bmp is actually an image file
-        main_bmp_path = os.path.join(skin_dir, "main.bmp")
+        main_bmp_path = self.skin_data.get_path("main.bmp")
+        if not main_bmp_path:
+            return False
+
         try:
             from PIL import Image
 
@@ -123,7 +132,7 @@ class SkinParser:
                 img.verify()
             # Reopen after verify since verify() closes the file
             with Image.open(main_bmp_path) as img:
-                pass
+                img.load()  # Read the file to be sure
         except Exception as e:
             print(f"INFO: main.bmp is not a valid image file: {e}")
             return False
@@ -163,8 +172,8 @@ class SkinParser:
                 print(f"WARNING: {filename} not found at {path}")
 
     def _load_viscolor_data(self):
-        viscolor_path = os.path.join(self.skin_data.extracted_skin_dir, "viscolor.txt")
-        if os.path.exists(viscolor_path):
+        viscolor_path = self.skin_data.get_path("viscolor.txt")
+        if viscolor_path and os.path.exists(viscolor_path):
             self.skin_data.viscolor_data = self._load_viscolor_file(viscolor_path)
         else:
             print(
@@ -173,8 +182,8 @@ class SkinParser:
             self.skin_data.viscolor_data = self._get_default_viscolor_data()
 
     def _load_region_data(self):
-        region_path = os.path.join(self.skin_data.extracted_skin_dir, "region.txt")
-        if os.path.exists(region_path):
+        region_path = self.skin_data.get_path("region.txt")
+        if region_path and os.path.exists(region_path):
             try:
                 with open(region_path, "r") as f:
                     region_content = f.read()
@@ -206,7 +215,10 @@ class SkinParser:
 
         sprite_info = sheet["sprites"][sprite_id]
 
-        sheet_path = os.path.join(self.skin_data.extracted_skin_dir, sheet_name)
+        sheet_path = self.skin_data.get_path(sheet_name)
+        if not sheet_path:
+            # The warning is printed by get_path if file not found
+            return None
 
         return {
             "sheet_path": sheet_path,
