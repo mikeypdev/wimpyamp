@@ -258,9 +258,7 @@ class Renderer:
         main_window_spec = self.skin_data.spec_json["destinations"]["main_window"]
         dest_area = main_window_spec["areas"]["eject"]
         eject_sprite_id = "EJECT_PRESSED" if ui_state.is_eject_pressed else "EJECT"
-        self._draw_sprite_from_spec(
-            painter, "cbuttons.bmp", eject_sprite_id, dest_area
-        )
+        self._draw_sprite_from_spec(painter, "cbuttons.bmp", eject_sprite_id, dest_area)
 
     def _render_shuffle_repeat_eq_pl(self, painter: QPainter, ui_state: UIState):
         main_window_spec = self.skin_data.spec_json["destinations"]["main_window"]
@@ -279,48 +277,36 @@ class Renderer:
             repeat_sprite_id = "REPEAT_ON"
         if ui_state.is_repeat_pressed:
             repeat_sprite_id += "_PRESSED"
-        self._draw_sprite_from_spec(
-            painter, "shufrep.bmp", repeat_sprite_id, dest_area
-        )
+        self._draw_sprite_from_spec(painter, "shufrep.bmp", repeat_sprite_id, dest_area)
         dest_area = main_window_spec["areas"]["eq_button"]
         eq_sprite_id = "EQ_OFF"
         if ui_state.eq_button_on:
             eq_sprite_id = "EQ_ON"
         if ui_state.is_eq_pressed:
             eq_sprite_id += "_PRESSED"
-        self._draw_sprite_from_spec(
-            painter, "shufrep.bmp", eq_sprite_id, dest_area
-        )
+        self._draw_sprite_from_spec(painter, "shufrep.bmp", eq_sprite_id, dest_area)
         dest_area = main_window_spec["areas"]["playlist_button"]
         pl_sprite_id = "PL_OFF"
         if ui_state.playlist_button_on:
             pl_sprite_id = "PL_ON"
         if ui_state.is_playlist_pressed:
             pl_sprite_id += "_PRESSED"
-        self._draw_sprite_from_spec(
-            painter, "shufrep.bmp", pl_sprite_id, dest_area
-        )
+        self._draw_sprite_from_spec(painter, "shufrep.bmp", pl_sprite_id, dest_area)
 
     def _render_mono_stereo(self, painter: QPainter, ui_state: UIState):
         main_window_spec = self.skin_data.spec_json["destinations"]["main_window"]
         if ui_state.is_stereo:
             dest_area = main_window_spec["areas"]["stereo_indicator"]
-            self._draw_sprite_from_spec(
-                painter, "monoster.bmp", "STEREO_ON", dest_area
-            )
+            self._draw_sprite_from_spec(painter, "monoster.bmp", "STEREO_ON", dest_area)
             dest_area = main_window_spec["areas"]["mono_indicator"]
-            self._draw_sprite_from_spec(
-                painter, "monoster.bmp", "MONO_OFF", dest_area
-            )
+            self._draw_sprite_from_spec(painter, "monoster.bmp", "MONO_OFF", dest_area)
         else:
             dest_area = main_window_spec["areas"]["stereo_indicator"]
             self._draw_sprite_from_spec(
                 painter, "monoster.bmp", "STEREO_OFF", dest_area
             )
             dest_area = main_window_spec["areas"]["mono_indicator"]
-            self._draw_sprite_from_spec(
-                painter, "monoster.bmp", "MONO_ON", dest_area
-            )
+            self._draw_sprite_from_spec(painter, "monoster.bmp", "MONO_ON", dest_area)
 
     def _render_sliders_tracks(self, painter: QPainter, ui_state: UIState):
         main_window_spec = self.skin_data.spec_json["destinations"]["main_window"]
@@ -545,7 +531,7 @@ class Renderer:
         digit_sheet_name = "nums_ex.bmp"
         if not self.skin_data.get_path(digit_sheet_name):
             digit_sheet_name = "numbers.bmp"
-        
+
         if not self.skin_data.get_path(digit_sheet_name):
             # Neither file exists, skip rendering
             return
@@ -592,9 +578,7 @@ class Renderer:
             sprite_id = "PAUSE_INDICATOR"
         else:
             sprite_id = "STOP_INDICATOR"
-        self._draw_sprite_from_spec(
-            painter, "playpaus.bmp", sprite_id, dest_area
-        )
+        self._draw_sprite_from_spec(painter, "playpaus.bmp", sprite_id, dest_area)
 
     def _render_bitrate_sample(self, painter: QPainter, ui_state: UIState):
         main_window_spec = self.skin_data.spec_json["destinations"]["main_window"]

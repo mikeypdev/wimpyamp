@@ -470,9 +470,7 @@ class PlaylistWindow(QWidget):
     def _load_pledit_colors(self):
         pledit_txt_path = self.skin_data.get_path("pledit.txt")
         if not pledit_txt_path or not os.path.exists(pledit_txt_path):
-            print(
-                f"WARNING: pledit.txt not found. Using default colors."
-            )
+            print("WARNING: pledit.txt not found. Using default colors.")
             return
 
         try:
@@ -499,9 +497,7 @@ class PlaylistWindow(QWidget):
 
         # Check if pledit.txt exists
         if not pledit_txt_path or not os.path.exists(pledit_txt_path):
-            print(
-                f"WARNING: pledit.txt not found. Using default font settings."
-            )
+            print("WARNING: pledit.txt not found. Using default font settings.")
             return
 
         try:
@@ -568,7 +564,9 @@ class PlaylistWindow(QWidget):
         ):
             return None
 
-        pledit_bmp_path = self.skin_data.get_path(self.playlist_spec["spriteSheet"]["file"])
+        pledit_bmp_path = self.skin_data.get_path(
+            self.playlist_spec["spriteSheet"]["file"]
+        )
         if not pledit_bmp_path or not os.path.exists(pledit_bmp_path):
             print(f"WARNING: {self.playlist_spec['spriteSheet']['file']} not found.")
             return None

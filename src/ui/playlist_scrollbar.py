@@ -69,14 +69,12 @@ class ScrollbarManager:
 
     def _get_sprite_pixmap(self, sprite_id):
         """Helper to get a QPixmap for a given sprite ID from the spec."""
-        if (
-            not self.sprite_manager
-            or not self.skin_data
-            or not self.playlist_spec
-        ):
+        if not self.sprite_manager or not self.skin_data or not self.playlist_spec:
             return None
 
-        pledit_bmp_path = self.skin_data.get_path(self.playlist_spec["spriteSheet"]["file"])
+        pledit_bmp_path = self.skin_data.get_path(
+            self.playlist_spec["spriteSheet"]["file"]
+        )
         if not pledit_bmp_path or not os.path.exists(pledit_bmp_path):
             print(f"WARNING: {self.playlist_spec['spriteSheet']['file']} not found.")
             return None
