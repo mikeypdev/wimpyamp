@@ -1,30 +1,24 @@
 # WimPyAmp
 
-> Important: This is _not_ Winamp! If you want to use a reference implementation of Winamp, use [Webamp](https://webamp.org/). It's amazing and runs in the browser. It even support visualizers.
-
 ## Overview
 
 WimPyAmp is a desktop music player designed for playing your local music collection, including hi-res lossless files. It’s compatible with Winamp skins for a really fun retro-pixel UI, and it looks suprisingly great on modern desktops. There are [thousands](https://skins.webamp.org/) of custom skins available that (should) work with WimPyAmp. You can even make your own!
 
 ![WimPyAmp screenshot - default skin: base-2.91.wsz](./WimPyAmp.png)
 
-WimPyAmp assumes that you have your music collection and playlists reasonably organized on your file system or network share, so it doesn’t try to create some kind of library. It trusts you. And desktop search works pretty well these days, so searching your collection is straightforward.
+WimPyAmp assumes that you have your music collection and playlists reasonably organized on your file system or network share, so it doesn’t try to create some kind of library. It trusts you know how to find your own music.
 
 ## Using WimPyAmp
 
 ![WimPyAmp screenshot - skin: Expensive Hi-Fi 1.2.wsz](./WimPyAmp-3.png)
 
-The app pretty much works like you might remember from Winamp (if you're old enough to remember). The “eject” button in the main window let’s you choose and load a single track. If you open the Playlist window, you’ll find options to load playlist files or add entire directories to the playlist (useful for albums). You can also select a track in your file system and choose “Open With...” WimPyAmp.
+The app pretty much works like you might remember from Winamp (if you're old enough to remember). The “eject” button in the main window let’s you choose and load a single track. If you open the Playlist window, you’ll find options to load playlist files or add entire directories to the playlist (useful for albums).
 
 Click the “V” button in the main window clutterbar to toggle between visualizer types (spectrum analyzer, waveform, none).
 
-WimPyAmp also has support for Album Art. Click "I" in the main window clutter bar, and an Album Art window will appear. It should show art from either the current track's metadata or an image in the same directory like `folder.jpg`. If there isn’t any art available, you’ll see a placeholder image (it was generated using Gemini Nano Banana - notice the watermark in the lower right corner of the image).
-
 To load a new skin or reload the default skin, either choose the Settings menu, or click “O” in the main window clutter bar.
 
-Releases are available for Mac on Intel and Apple Silicon. WimPyAmp also works on Linux and Windows (see Developer Notes below).
-
-Note that Linux users will usually need to hold down the Super key (CMD/WIN) while using the mouse to move the app windows, as they have a frameless UI design. Snapping and docking is not supported on Linux for similar reasons.
+WimPyAmp also has support for Album Art. Click "I" in the main window clutter bar, and an Album Art window will appear. It should show art from either the current track's metadata or an image in the same directory like `folder.jpg`. If there isn’t any art available, you’ll see a placeholder image.
 
 ## Features and Bugs
 
@@ -38,13 +32,13 @@ A: Nope
 Q: Will it play CDs or SACDs?
 A: You have a CD/DVD drive? Wow. I’ll keep it in mind.
 
+Linux users may need to hold down the Super key (CMD/WIN) while using the mouse to move the app windows. Snapping and docking is not supported on Linux.
+
 ## Developer Notes
 
 ### Python
 
-This was developed on an Intel Mac using Python 3.13, as well an Apple Silicon Mac using Python 3.14. The core audio library is the amazing librosa, and UI is PySide6 (Python QT).
-
-Intel Mac support is fading away, so pay attention to supported libraries if you are on an old Mac.
+WimPyAmp works with Python3 on Mac, Linux, and Windows. Releases that bundle Python are currently available for Mac on Intel and Apple Silicon. Other platforms will (eventually) follow.
 
 ### Makefile
 
@@ -53,6 +47,8 @@ There's a Makefile in the project that should handle everything for Mac and Linu
 Type `make help` to see other options, like linting or making an app bundle or binary.
 
 Windows users can either install WSL to use the Makefile, or use Powershell scripts in the `winscripts/` directory and tools in Visual Studio Code. Don’t forget to install Python via the MS Store.
+
+Intel Mac Python support is fading away, so pay attention to supported libraries if you are on an old Mac.
 
 ### AI Coding Agents
 
@@ -64,7 +60,7 @@ There is an `AGENT-lite.md` file that attempts to provide low-capability agents 
 
 ### Thanks
 
-Special thanks to the Webamp project, which archived key documents for the Winamp skin specification, as well as provided a reference implementation for the mini-visualizer.
+Special thanks to the amazing [Webamp](https://webamp.org/) project, which archived key documents for the Winamp skin specification and provided a reference implementation for the mini-visualizer.
 
 And thanks to the thousands of people who created really cool Winamp skins 25 years ago.
 
