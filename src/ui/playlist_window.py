@@ -2366,11 +2366,15 @@ class PlaylistWindow(QWidget):
 
         # Use default music path from preferences if available, otherwise use test music directory
         initial_path = test_music_dir  # Default fallback
-        if hasattr(self, 'main_window') and self.main_window and hasattr(self.main_window, 'preferences'):
+        if (
+            hasattr(self, "main_window")
+            and self.main_window
+            and hasattr(self.main_window, "preferences")
+        ):
             default_music_path = self.main_window.preferences.get_default_music_path()
             if default_music_path:
                 initial_path = default_music_path
-        
+
         file_path, _ = QFileDialog.getOpenFileName(
             self,
             "Load Music File",
@@ -3056,11 +3060,15 @@ class PlaylistWindow(QWidget):
 
         # Use default music path from preferences if available, otherwise use test music directory
         initial_path = test_music_dir  # Default fallback
-        if hasattr(self, 'main_window') and self.main_window and hasattr(self.main_window, 'preferences'):
+        if (
+            hasattr(self, "main_window")
+            and self.main_window
+            and hasattr(self.main_window, "preferences")
+        ):
             default_music_path = self.main_window.preferences.get_default_music_path()
             if default_music_path:
                 initial_path = default_music_path
-        
+
         directory_path = QFileDialog.getExistingDirectory(
             self, "Select Directory to Add", initial_path, options=options
         )
@@ -3138,11 +3146,15 @@ class PlaylistWindow(QWidget):
         options = QFileDialog.Options()
         # Use default music path for saving if available, otherwise use empty string
         initial_path = ""  # Default fallback
-        if hasattr(self, 'main_window') and self.main_window and hasattr(self.main_window, 'preferences'):
+        if (
+            hasattr(self, "main_window")
+            and self.main_window
+            and hasattr(self.main_window, "preferences")
+        ):
             default_music_path = self.main_window.preferences.get_default_music_path()
             if default_music_path:
                 initial_path = default_music_path
-        
+
         file_path, _ = QFileDialog.getSaveFileName(
             self,
             "Save Playlist",
@@ -3153,7 +3165,7 @@ class PlaylistWindow(QWidget):
         if file_path:
             # Determine the directory where the playlist file is being saved
             playlist_dir = os.path.dirname(file_path)
-            
+
             # Determine if it's an M3U, PLS, or text file
             if file_path.lower().endswith((".m3u", ".m3u8")):
                 with open(file_path, "w") as f:
@@ -3190,16 +3202,19 @@ class PlaylistWindow(QWidget):
                         relative_path = os.path.relpath(filepath, start=playlist_dir)
                         f.write(relative_path + "\n")
 
-
     def _load_playlist_from_file(self):
         options = QFileDialog.Options()
         # Use default music path for loading if available, otherwise use empty string
         initial_path = ""  # Default fallback
-        if hasattr(self, 'main_window') and self.main_window and hasattr(self.main_window, 'preferences'):
+        if (
+            hasattr(self, "main_window")
+            and self.main_window
+            and hasattr(self.main_window, "preferences")
+        ):
             default_music_path = self.main_window.preferences.get_default_music_path()
             if default_music_path:
                 initial_path = default_music_path
-        
+
         file_path, _ = QFileDialog.getOpenFileName(
             self,
             "Load Playlist",
@@ -3274,7 +3289,7 @@ class PlaylistWindow(QWidget):
                             file_num = key_lower[4:]  # Get the number after "file"
                             if file_num.isdigit():
                                 pls_entries[file_num] = pls_entries.get(file_num, {})
-                                pls_entries[file_num]['file'] = value
+                                pls_entries[file_num]["file"] = value
                     elif line.lower().startswith("title") and "=" in line:
                         # Parse TitleN=title
                         key, value = line.split("=", 1)
@@ -3284,20 +3299,20 @@ class PlaylistWindow(QWidget):
                             title_num = key_lower[5:]  # Get the number after "title"
                             if title_num.isdigit():
                                 pls_entries[title_num] = pls_entries.get(title_num, {})
-                                pls_entries[title_num]['title'] = value
+                                pls_entries[title_num]["title"] = value
 
                 # Add entries in numerical order
                 item_number = 1
                 for file_num in sorted(pls_entries.keys(), key=int):
                     entry = pls_entries[file_num]
-                    if 'file' in entry:
+                    if "file" in entry:
                         # Convert relative path to absolute if needed
-                        abs_path = entry['file']
-                        if not os.path.isabs(entry['file']):
-                            abs_path = os.path.join(playlist_dir, entry['file'])
+                        abs_path = entry["file"]
+                        if not os.path.isabs(entry["file"]):
+                            abs_path = os.path.join(playlist_dir, entry["file"])
                         new_filepaths.append(abs_path)
                         # Use title if available, otherwise use filename
-                        display_title = entry.get('title', os.path.basename(abs_path))
+                        display_title = entry.get("title", os.path.basename(abs_path))
                         new_display_items.append(f"{item_number}. {display_title}")
                         item_number += 1
             else:
@@ -3523,11 +3538,17 @@ class PlaylistWindow(QWidget):
 
             # Use default music path from preferences if available, otherwise use empty string
             initial_path = ""  # Default fallback
-            if hasattr(self, 'main_window') and self.main_window and hasattr(self.main_window, 'preferences'):
-                default_music_path = self.main_window.preferences.get_default_music_path()
+            if (
+                hasattr(self, "main_window")
+                and self.main_window
+                and hasattr(self.main_window, "preferences")
+            ):
+                default_music_path = (
+                    self.main_window.preferences.get_default_music_path()
+                )
                 if default_music_path:
                     initial_path = default_music_path
-            
+
             file_path, _ = QFileDialog.getOpenFileName(
                 self,
                 "Open Audio File",

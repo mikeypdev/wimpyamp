@@ -32,7 +32,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QLabel,
     QHBoxLayout,
-    QLineEdit
+    QLineEdit,
 )
 
 
@@ -49,25 +49,27 @@ class PreferencesDialog(QDialog):
         music_path_layout = QHBoxLayout()
         music_path_label = QLabel("Default Music Path:")
         self.music_path_line_edit = QLineEdit()
-        
+
         # Load current value if available
-        current_path = self.preferences.get_default_music_path() if self.preferences else ""
+        current_path = (
+            self.preferences.get_default_music_path() if self.preferences else ""
+        )
         self.music_path_line_edit.setText(current_path if current_path else "")
-        
+
         self.browse_music_path_btn = QPushButton("Browse...")
         self.browse_music_path_btn.clicked.connect(self.browse_music_path)
-        
+
         music_path_layout.addWidget(music_path_label)
         music_path_layout.addWidget(self.music_path_line_edit)
         music_path_layout.addWidget(self.browse_music_path_btn)
-        
+
         # Buttons
         button_layout = QHBoxLayout()
         self.ok_btn = QPushButton("OK")
         self.cancel_btn = QPushButton("Cancel")
         self.ok_btn.clicked.connect(self.accept)
         self.cancel_btn.clicked.connect(self.reject)
-        
+
         button_layout.addWidget(self.ok_btn)
         button_layout.addWidget(self.cancel_btn)
 
@@ -83,9 +85,9 @@ class PreferencesDialog(QDialog):
             self,
             "Select Default Music Directory",
             current_path if current_path else QDir.homePath(),
-            QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks
+            QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks,
         )
-        
+
         if directory:
             self.music_path_line_edit.setText(directory)
 
@@ -109,7 +111,9 @@ class SkinSelectionDialog(QDialog):
         # Create buttons
         self.load_new_skin_btn = QPushButton("Load New Skin")
         self.load_default_skin_btn = QPushButton("Load Default Skin")
-        self.preferences_btn = QPushButton("Preferences...")  # New button for preferences
+        self.preferences_btn = QPushButton(
+            "Preferences..."
+        )  # New button for preferences
         self.cancel_btn = QPushButton("Close")
 
         # Connect buttons to accept methods that set result codes
@@ -133,8 +137,11 @@ class SkinSelectionDialog(QDialog):
     def show_preferences_dialog(self):
         """Show the preferences dialog with default music path option."""
         from .main_window import PreferencesDialog
+
         if self.main_window:
-            dialog = PreferencesDialog(parent=self.main_window, preferences=self.main_window.preferences)
+            dialog = PreferencesDialog(
+                parent=self.main_window, preferences=self.main_window.preferences
+            )
             dialog.exec_()
         # Don't close the skin selection dialog after preferences
 
@@ -1448,7 +1455,7 @@ class MainWindow(QWidget):
                 # Use default music path from preferences if available, otherwise use empty string
                 default_music_path = self.preferences.get_default_music_path()
                 initial_path = default_music_path if default_music_path else ""
-                
+
                 file_path, _ = QFileDialog.getOpenFileName(
                     self,
                     "Open Audio File",
@@ -1974,7 +1981,7 @@ class MainWindow(QWidget):
     def load_and_play_file(self, file_path):
         """
         Load and play a file passed from command line or file opening event.
-        
+
         New behavior:
         - If it's a playlist file (.m3u, .m3u8, .pls), load it like the Load Playlist menu option
         - If no track is currently playing AND playlist is empty, keep current behavior (load and play)
@@ -1987,14 +1994,14 @@ class MainWindow(QWidget):
 
         # Check if it's a playlist file
         file_extension = os.path.splitext(file_path)[1].lower()
-        if file_extension in ['.m3u', '.m3u8', '.pls']:
+        if file_extension in [".m3u", ".m3u8", ".pls"]:
             return self.load_playlist_file(file_path)
 
         # Check current playback state
         current_state = self.audio_engine.get_playback_state()
         is_playing = current_state["is_playing"]
         is_stopped = not is_playing and not current_state["is_paused"]
-        
+
         # If nothing is playing and playlist is empty, use original behavior
         if is_stopped and len(self.playlist) == 0:
             # Original behavior: add to playlist and play immediately
@@ -2022,7 +2029,10 @@ class MainWindow(QWidget):
                     self.playlist_window.set_current_track_index(0)
 
                 # Refresh album art if the window is visible
-                if hasattr(self, "album_art_window") and self.album_art_window.isVisible():
+                if (
+                    hasattr(self, "album_art_window")
+                    and self.album_art_window.isVisible()
+                ):
                     self.album_art_window.refresh_album_art(self.audio_engine)
 
                 return True
@@ -2034,12 +2044,14 @@ class MainWindow(QWidget):
             if file_path not in self.playlist:  # Avoid duplicates
                 self.playlist.append(file_path)
                 self.update_playlist_display()
-                
+
                 # If a track is playing, just add to playlist and return
                 if is_playing:
-                    print(f"Added {os.path.basename(file_path)} to playlist (not interrupting current track)")
+                    print(
+                        f"Added {os.path.basename(file_path)} to playlist (not interrupting current track)"
+                    )
                     return True
-                
+
                 # If no track is playing but playlist was not empty, play the newly added track
                 # Find the index of the newly added track (it's at the end)
                 new_index = len(self.playlist) - 1
@@ -2134,9 +2146,9 @@ class MainWindow(QWidget):
         file_extension = os.path.splitext(playlist_file_path)[1].lower()
 
         try:
-            if file_extension in ['.m3u', '.m3u8']:
+            if file_extension in [".m3u", ".m3u8"]:
                 # Parse M3U file format
-                with open(playlist_file_path, "r", encoding='utf-8') as f:
+                with open(playlist_file_path, "r", encoding="utf-8") as f:
                     lines = f.readlines()
 
                 i = 0
@@ -2150,7 +2162,9 @@ class MainWindow(QWidget):
                         # This is a file path
                         # Resolve relative paths relative to the playlist file's directory
                         if not os.path.isabs(line):
-                            line = os.path.join(os.path.dirname(playlist_file_path), line)
+                            line = os.path.join(
+                                os.path.dirname(playlist_file_path), line
+                            )
                         new_filepaths.append(line)
                     elif line.startswith("#EXTINF"):
                         # This is metadata, skip to the next line which should be the file path
@@ -2160,13 +2174,15 @@ class MainWindow(QWidget):
                             if path_line:
                                 # Resolve relative paths relative to the playlist file's directory
                                 if not os.path.isabs(path_line):
-                                    path_line = os.path.join(os.path.dirname(playlist_file_path), path_line)
+                                    path_line = os.path.join(
+                                        os.path.dirname(playlist_file_path), path_line
+                                    )
                                 new_filepaths.append(path_line)
                     i += 1
-            elif file_extension == '.pls':
+            elif file_extension == ".pls":
                 # Parse PLS (Playlist) file format
                 # PLS format: [playlist], File1=/path/to/file, Title1=song title, Length1=duration, NumberOfEntries=total count
-                with open(playlist_file_path, "r", encoding='utf-8') as f:
+                with open(playlist_file_path, "r", encoding="utf-8") as f:
                     lines = f.readlines()
 
                 pls_entries = {}
@@ -2182,8 +2198,14 @@ class MainWindow(QWidget):
                             if file_num.isdigit():
                                 pls_entries[file_num] = pls_entries.get(file_num, {})
                                 # Resolve relative paths relative to the playlist file's directory
-                                resolved_path = value if os.path.isabs(value) else os.path.join(os.path.dirname(playlist_file_path), value)
-                                pls_entries[file_num]['file'] = resolved_path
+                                resolved_path = (
+                                    value
+                                    if os.path.isabs(value)
+                                    else os.path.join(
+                                        os.path.dirname(playlist_file_path), value
+                                    )
+                                )
+                                pls_entries[file_num]["file"] = resolved_path
                     elif line.lower().startswith("title") and "=" in line:
                         # Parse TitleN=title
                         key, value = line.split("=", 1)
@@ -2193,42 +2215,48 @@ class MainWindow(QWidget):
                             title_num = key_lower[5:]  # Get the number after "title"
                             if title_num.isdigit():
                                 pls_entries[title_num] = pls_entries.get(title_num, {})
-                                pls_entries[title_num]['title'] = value
+                                pls_entries[title_num]["title"] = value
 
                 # Add entries in numerical order
                 for file_num in sorted(pls_entries.keys(), key=int):
                     entry = pls_entries[file_num]
-                    if 'file' in entry:
-                        new_filepaths.append(entry['file'])
+                    if "file" in entry:
+                        new_filepaths.append(entry["file"])
 
             else:
                 # Plain text file with one file path per line (just in case)
-                with open(playlist_file_path, "r", encoding='utf-8') as f:
+                with open(playlist_file_path, "r", encoding="utf-8") as f:
                     for line in f:
                         line = line.strip()
                         if line and not line.startswith("#"):
                             # Resolve relative paths relative to the playlist file's directory
                             if not os.path.isabs(line):
-                                line = os.path.join(os.path.dirname(playlist_file_path), line)
+                                line = os.path.join(
+                                    os.path.dirname(playlist_file_path), line
+                                )
                             new_filepaths.append(line)
 
             # Update the main window's playlist
             if new_filepaths:
                 self.playlist = new_filepaths
                 self.current_track_index = -1  # No track playing yet
-                
+
                 # Update the playlist window display
                 self.update_playlist_display()
-                
+
                 # If there are tracks in the playlist, start playing the first one
                 if self.playlist:
                     first_track_index = 0
                     if self.play_track_at_index(first_track_index):
-                        print(f"Loaded playlist and started playing: {os.path.basename(self.playlist[first_track_index])}")
+                        print(
+                            f"Loaded playlist and started playing: {os.path.basename(self.playlist[first_track_index])}"
+                        )
                         return True
                     else:
                         # If we can't play the first track, still consider the playlist loaded
-                        print(f"Playlist loaded with {len(self.playlist)} tracks, but first track failed to play")
+                        print(
+                            f"Playlist loaded with {len(self.playlist)} tracks, but first track failed to play"
+                        )
                         return True
                 else:
                     print("Playlist loaded but is empty")
