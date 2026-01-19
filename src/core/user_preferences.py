@@ -575,6 +575,30 @@ class UserPreferences:
                 project_root, "resources", "default_skin", "base-2.91.wsz"
             )
 
+    def get_default_music_path(self) -> Optional[str]:
+        """Get the default music path from preferences.
+
+        Returns:
+            str or None: The default music path if set, None otherwise.
+        """
+        return self.prefs.get("default_music_path")
+
+    def set_default_music_path(self, path: str):
+        """Set the default music path in preferences.
+
+        Args:
+            path: The default music path to store.
+        """
+        if path:
+            # Store the custom music path
+            self.prefs["default_music_path"] = path
+            self._save_if_changed()
+        else:
+            # If path is empty, remove from preferences (use default behavior)
+            if "default_music_path" in self.prefs:
+                del self.prefs["default_music_path"]
+                self._save_if_changed()
+
 
 # Global preferences instance
 _preferences_instance = None

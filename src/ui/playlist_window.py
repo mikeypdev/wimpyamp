@@ -2364,10 +2364,17 @@ class PlaylistWindow(QWidget):
         )
         test_music_dir = os.path.join(project_root, "resources", "test_music")
 
+        # Use default music path from preferences if available, otherwise use test music directory
+        initial_path = test_music_dir  # Default fallback
+        if hasattr(self, 'main_window') and self.main_window and hasattr(self.main_window, 'preferences'):
+            default_music_path = self.main_window.preferences.get_default_music_path()
+            if default_music_path:
+                initial_path = default_music_path
+        
         file_path, _ = QFileDialog.getOpenFileName(
             self,
             "Load Music File",
-            test_music_dir,
+            initial_path,
             "Music Files (*.mp3 *.wav *.ogg *.flac *.m4a *.aac *.opus *.aiff *.au);;All Files (*)",
             options=options,
         )
@@ -3047,8 +3054,15 @@ class PlaylistWindow(QWidget):
         )
         test_music_dir = os.path.join(project_root, "resources", "test_music")
 
+        # Use default music path from preferences if available, otherwise use test music directory
+        initial_path = test_music_dir  # Default fallback
+        if hasattr(self, 'main_window') and self.main_window and hasattr(self.main_window, 'preferences'):
+            default_music_path = self.main_window.preferences.get_default_music_path()
+            if default_music_path:
+                initial_path = default_music_path
+        
         directory_path = QFileDialog.getExistingDirectory(
-            self, "Select Directory to Add", test_music_dir, options=options
+            self, "Select Directory to Add", initial_path, options=options
         )
         if directory_path:
             # Define supported media file extensions
@@ -3122,10 +3136,17 @@ class PlaylistWindow(QWidget):
 
     def _save_playlist(self):
         options = QFileDialog.Options()
+        # Use default music path for saving if available, otherwise use empty string
+        initial_path = ""  # Default fallback
+        if hasattr(self, 'main_window') and self.main_window and hasattr(self.main_window, 'preferences'):
+            default_music_path = self.main_window.preferences.get_default_music_path()
+            if default_music_path:
+                initial_path = default_music_path
+        
         file_path, _ = QFileDialog.getOpenFileName(
             self,
             "Save Playlist",
-            "",
+            initial_path,
             "Playlist Files (*.m3u *.m3u8 *.txt);;All Files (*)",
             options=options,
         )
@@ -3151,10 +3172,17 @@ class PlaylistWindow(QWidget):
 
     def _load_playlist_from_file(self):
         options = QFileDialog.Options()
+        # Use default music path for loading if available, otherwise use empty string
+        initial_path = ""  # Default fallback
+        if hasattr(self, 'main_window') and self.main_window and hasattr(self.main_window, 'preferences'):
+            default_music_path = self.main_window.preferences.get_default_music_path()
+            if default_music_path:
+                initial_path = default_music_path
+        
         file_path, _ = QFileDialog.getOpenFileName(
             self,
             "Load Playlist",
-            "",
+            initial_path,
             "Playlist Files (*.m3u *.m3u8 *.txt);;All Files (*)",
             options=options,
         )
@@ -3417,10 +3445,17 @@ class PlaylistWindow(QWidget):
             # Open file dialog to load a track
             from PySide6.QtWidgets import QFileDialog
 
+            # Use default music path from preferences if available, otherwise use empty string
+            initial_path = ""  # Default fallback
+            if hasattr(self, 'main_window') and self.main_window and hasattr(self.main_window, 'preferences'):
+                default_music_path = self.main_window.preferences.get_default_music_path()
+                if default_music_path:
+                    initial_path = default_music_path
+            
             file_path, _ = QFileDialog.getOpenFileName(
                 self,
                 "Open Audio File",
-                "",
+                initial_path,
                 "Audio Files (*.mp3 *.wav *.ogg *.flac *.m4a *.aac *.opus *.aiff *.au);;All Files (*)",
             )
 
