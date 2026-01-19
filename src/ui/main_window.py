@@ -1972,43 +1972,80 @@ class MainWindow(QWidget):
                     self.play_track_at_index(selected_track_index)
 
     def load_and_play_file(self, file_path):
-        """Load and play a file passed from command line or file opening event."""
+        """
+        Load and play a file passed from command line or file opening event.
+        
+        New behavior:
+        - If no track is currently playing AND playlist is empty, keep current behavior (load and play)
+        - If a track is playing, add the new file to the bottom of the playlist but don't interrupt playback
+        - If no track is playing BUT playlist is not empty, add to playlist and play the new track
+        """
         if not os.path.isfile(file_path):
             print(f"File not found: {file_path}")
             return False
 
-        # Add to playlist and play immediately
-        if self.audio_engine.load_track(file_path):
-            # For single file loading, create a new playlist with just this file
-            self.playlist = [file_path]
-            self.current_track_index = 0
+        # Check current playback state
+        current_state = self.audio_engine.get_playback_state()
+        is_playing = current_state["is_playing"]
+        is_stopped = not is_playing and not current_state["is_paused"]
+        
+        # If nothing is playing and playlist is empty, use original behavior
+        if is_stopped and len(self.playlist) == 0:
+            # Original behavior: add to playlist and play immediately
+            if self.audio_engine.load_track(file_path):
+                # For single file loading, create a new playlist with just this file
+                self.playlist = [file_path]
+                self.current_track_index = 0
 
-            # Update the playlist window display
-            self.update_playlist_display()
+                # Update the playlist window display
+                self.update_playlist_display()
 
-            # Update the current track title
-            metadata = self.audio_engine.get_metadata()
-            if metadata:
-                # Format as "artist - song title" for display
-                self.ui_state.current_track_title = f"{metadata.get('artist', 'Unknown')} - {metadata.get('title', 'Unknown')}"
+                # Update the current track title
+                metadata = self.audio_engine.get_metadata()
+                if metadata:
+                    # Format as "artist - song title" for display
+                    self.ui_state.current_track_title = f"{metadata.get('artist', 'Unknown')} - {metadata.get('title', 'Unknown')}"
+                else:
+                    self.ui_state.current_track_title = os.path.basename(file_path)
+
+                # Start playback
+                self.audio_engine.play()
+
+                # Update playlist window to show currently playing track
+                if hasattr(self, "playlist_window"):
+                    self.playlist_window.set_current_track_index(0)
+
+                # Refresh album art if the window is visible
+                if hasattr(self, "album_art_window") and self.album_art_window.isVisible():
+                    self.album_art_window.refresh_album_art(self.audio_engine)
+
+                return True
             else:
-                self.ui_state.current_track_title = os.path.basename(file_path)
-
-            # Start playback
-            self.audio_engine.play()
-
-            # Update playlist window to show currently playing track
-            if hasattr(self, "playlist_window"):
-                self.playlist_window.set_current_track_index(0)
-
-            # Refresh album art if the window is visible
-            if hasattr(self, "album_art_window") and self.album_art_window.isVisible():
-                self.album_art_window.refresh_album_art(self.audio_engine)
-
-            return True
+                self.ui_state.current_track_title = "Error loading track"
+                return False
         else:
-            self.ui_state.current_track_title = "Error loading track"
-            return False
+            # Add the file to the bottom of the playlist
+            if file_path not in self.playlist:  # Avoid duplicates
+                self.playlist.append(file_path)
+                self.update_playlist_display()
+                
+                # If a track is playing, just add to playlist and return
+                if is_playing:
+                    print(f"Added {os.path.basename(file_path)} to playlist (not interrupting current track)")
+                    return True
+                
+                # If no track is playing but playlist was not empty, play the newly added track
+                # Find the index of the newly added track (it's at the end)
+                new_index = len(self.playlist) - 1
+                if self.play_track_at_index(new_index):
+                    print(f"Now playing {os.path.basename(file_path)}")
+                    return True
+                else:
+                    self.ui_state.current_track_title = "Error loading track"
+                    return False
+            else:
+                print(f"File {file_path} already exists in playlist, skipping")
+                return True
 
     def load_directory(self, directory_path):
         """Load all media files from a directory and its subdirectories."""
@@ -2370,8 +2407,9 @@ def main():
         window.load_directory(dir_paths[0])
     # Otherwise load files if provided as command line arguments
     elif file_paths:
-        # Load the first file
-        window.load_and_play_file(file_paths[0])
+        # Load each file sequentially using the new smart behavior
+        for file_path in file_paths:
+            window.load_and_play_file(file_path)
 
     return app.exec_()
 
