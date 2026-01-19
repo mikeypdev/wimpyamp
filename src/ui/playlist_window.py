@@ -3154,7 +3154,7 @@ class PlaylistWindow(QWidget):
             # Determine the directory where the playlist file is being saved
             playlist_dir = os.path.dirname(file_path)
             
-            # Determine if it's an M3U file or text file
+            # Determine if it's an M3U, PLS, or text file
             if file_path.lower().endswith((".m3u", ".m3u8")):
                 with open(file_path, "w") as f:
                     f.write("#EXTM3U\n")  # M3U header
@@ -3166,6 +3166,22 @@ class PlaylistWindow(QWidget):
                             f"#EXTINF:0,{os.path.basename(filepath)}\n"
                         )  # Placeholder duration
                         f.write(f"{relative_path}\n")
+            elif file_path.lower().endswith(".pls"):
+                with open(file_path, "w") as f:
+                    f.write("[playlist]\n")  # PLS header
+                    for i, filepath in enumerate(self.playlist_filepaths, 1):
+                        # Convert absolute path to relative path with respect to playlist directory
+                        relative_path = os.path.relpath(filepath, start=playlist_dir)
+                        # Write the file path
+                        f.write(f"File{i}={relative_path}\n")
+                        # Optionally write title based on filename
+                        f.write(f"Title{i}={os.path.basename(filepath)}\n")
+                        # Write a placeholder length (0 for unknown)
+                        f.write(f"Length{i}=-1\n")
+                    # Write the total number of entries
+                    f.write(f"NumberOfEntries={len(self.playlist_filepaths)}\n")
+                    # Write version
+                    f.write("Version=2\n")
             else:
                 # Save as text file with just file paths
                 with open(file_path, "w") as f:
