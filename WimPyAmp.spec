@@ -64,6 +64,13 @@ app = BUNDLE(
                 'CFBundleTypeIconFile': 'wimpyamp.icns',
                 'LSItemContentTypes': ['public.audio'],
                 'LSHandlerRank': 'Owner'
+            },
+            {
+                'CFBundleTypeName': 'Playlist Files',
+                'CFBundleTypeExtensions': ['m3u', 'm3u8', 'pls', 'txt'],
+                'CFBundleTypeIconFile': 'wimpyamp.icns',
+                'LSItemContentTypes': ['public.plain-text'],
+                'LSHandlerRank': 'Owner'
             }
         ],
         'CFBundleURLTypes': [

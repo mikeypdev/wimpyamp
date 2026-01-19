@@ -1976,6 +1976,7 @@ class MainWindow(QWidget):
         Load and play a file passed from command line or file opening event.
         
         New behavior:
+        - If it's a playlist file (.m3u, .m3u8, .pls), load it like the Load Playlist menu option
         - If no track is currently playing AND playlist is empty, keep current behavior (load and play)
         - If a track is playing, add the new file to the bottom of the playlist but don't interrupt playback
         - If no track is playing BUT playlist is not empty, add to playlist and play the new track
@@ -1983,6 +1984,11 @@ class MainWindow(QWidget):
         if not os.path.isfile(file_path):
             print(f"File not found: {file_path}")
             return False
+
+        # Check if it's a playlist file
+        file_extension = os.path.splitext(file_path)[1].lower()
+        if file_extension in ['.m3u', '.m3u8', '.pls']:
+            return self.load_playlist_file(file_path)
 
         # Check current playback state
         current_state = self.audio_engine.get_playback_state()
@@ -2113,6 +2119,126 @@ class MainWindow(QWidget):
             return True
         else:
             print(f"No media files found in directory: {directory_path}")
+            return False
+
+    def load_playlist_file(self, playlist_file_path):
+        """
+        Load a playlist file (.m3u, .m3u8, or .pls) similar to the Load Playlist menu option.
+        This mimics the functionality from the playlist window's Load Playlist function.
+        """
+        if not os.path.isfile(playlist_file_path):
+            print(f"Playlist file not found: {playlist_file_path}")
+            return False
+
+        new_filepaths = []
+        file_extension = os.path.splitext(playlist_file_path)[1].lower()
+
+        try:
+            if file_extension in ['.m3u', '.m3u8']:
+                # Parse M3U file format
+                with open(playlist_file_path, "r", encoding='utf-8') as f:
+                    lines = f.readlines()
+
+                i = 0
+                while i < len(lines):
+                    line = lines[i].strip()
+                    if (
+                        line
+                        and not line.startswith("#EXTM3U")
+                        and not line.startswith("#EXTINF")
+                    ):
+                        # This is a file path
+                        # Resolve relative paths relative to the playlist file's directory
+                        if not os.path.isabs(line):
+                            line = os.path.join(os.path.dirname(playlist_file_path), line)
+                        new_filepaths.append(line)
+                    elif line.startswith("#EXTINF"):
+                        # This is metadata, skip to the next line which should be the file path
+                        i += 1
+                        if i < len(lines):
+                            path_line = lines[i].strip()
+                            if path_line:
+                                # Resolve relative paths relative to the playlist file's directory
+                                if not os.path.isabs(path_line):
+                                    path_line = os.path.join(os.path.dirname(playlist_file_path), path_line)
+                                new_filepaths.append(path_line)
+                    i += 1
+            elif file_extension == '.pls':
+                # Parse PLS (Playlist) file format
+                # PLS format: [playlist], File1=/path/to/file, Title1=song title, Length1=duration, NumberOfEntries=total count
+                with open(playlist_file_path, "r", encoding='utf-8') as f:
+                    lines = f.readlines()
+
+                pls_entries = {}
+                for line in lines:
+                    line = line.strip()
+                    if line.lower().startswith("file") and "=" in line:
+                        # Parse FileN=filepath
+                        key, value = line.split("=", 1)
+                        # Extract the number from keys like File1, File2, etc.
+                        key_lower = key.lower()
+                        if key_lower.startswith("file") and len(key_lower) > 4:
+                            file_num = key_lower[4:]  # Get the number after "file"
+                            if file_num.isdigit():
+                                pls_entries[file_num] = pls_entries.get(file_num, {})
+                                # Resolve relative paths relative to the playlist file's directory
+                                resolved_path = value if os.path.isabs(value) else os.path.join(os.path.dirname(playlist_file_path), value)
+                                pls_entries[file_num]['file'] = resolved_path
+                    elif line.lower().startswith("title") and "=" in line:
+                        # Parse TitleN=title
+                        key, value = line.split("=", 1)
+                        # Extract the number from keys like Title1, Title2, etc.
+                        key_lower = key.lower()
+                        if key_lower.startswith("title") and len(key_lower) > 5:
+                            title_num = key_lower[5:]  # Get the number after "title"
+                            if title_num.isdigit():
+                                pls_entries[title_num] = pls_entries.get(title_num, {})
+                                pls_entries[title_num]['title'] = value
+
+                # Add entries in numerical order
+                for file_num in sorted(pls_entries.keys(), key=int):
+                    entry = pls_entries[file_num]
+                    if 'file' in entry:
+                        new_filepaths.append(entry['file'])
+
+            else:
+                # Plain text file with one file path per line (just in case)
+                with open(playlist_file_path, "r", encoding='utf-8') as f:
+                    for line in f:
+                        line = line.strip()
+                        if line and not line.startswith("#"):
+                            # Resolve relative paths relative to the playlist file's directory
+                            if not os.path.isabs(line):
+                                line = os.path.join(os.path.dirname(playlist_file_path), line)
+                            new_filepaths.append(line)
+
+            # Update the main window's playlist
+            if new_filepaths:
+                self.playlist = new_filepaths
+                self.current_track_index = -1  # No track playing yet
+                
+                # Update the playlist window display
+                self.update_playlist_display()
+                
+                # If there are tracks in the playlist, start playing the first one
+                if self.playlist:
+                    first_track_index = 0
+                    if self.play_track_at_index(first_track_index):
+                        print(f"Loaded playlist and started playing: {os.path.basename(self.playlist[first_track_index])}")
+                        return True
+                    else:
+                        # If we can't play the first track, still consider the playlist loaded
+                        print(f"Playlist loaded with {len(self.playlist)} tracks, but first track failed to play")
+                        return True
+                else:
+                    print("Playlist loaded but is empty")
+                    return True
+            else:
+                print("No valid file paths found in playlist file")
+                return False
+
+        except Exception as e:
+            print(f"Error loading playlist file {playlist_file_path}: {str(e)}")
             return False
 
     def dragEnterEvent(self, event):

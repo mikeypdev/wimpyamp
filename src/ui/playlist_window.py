@@ -3147,7 +3147,7 @@ class PlaylistWindow(QWidget):
             self,
             "Save Playlist",
             initial_path,
-            "Playlist Files (*.m3u *.m3u8 *.txt);;All Files (*)",
+            "Playlist Files (*.m3u *.m3u8 *.pls *.txt);;All Files (*)",
             options=options,
         )
         if file_path:
@@ -3183,7 +3183,7 @@ class PlaylistWindow(QWidget):
             self,
             "Load Playlist",
             initial_path,
-            "Playlist Files (*.m3u *.m3u8 *.txt);;All Files (*)",
+            "Playlist Files (*.m3u *.m3u8 *.pls *.txt);;All Files (*)",
             options=options,
         )
         if file_path:
@@ -3225,6 +3225,46 @@ class PlaylistWindow(QWidget):
                                 new_display_items.append(f"{item_number}. {title}")
                                 item_number += 1
                     i += 1
+            elif file_path.lower().endswith(".pls"):
+                # Parse PLS (Playlist) file format
+                # PLS format: [playlist], File1=/path/to/file, Title1=song title, Length1=duration, NumberOfEntries=total count
+                with open(file_path, "r") as f:
+                    lines = f.readlines()
+
+                pls_entries = {}
+                for line in lines:
+                    line = line.strip()
+                    if line.lower().startswith("file") and "=" in line:
+                        # Parse FileN=filepath
+                        key, value = line.split("=", 1)
+                        # Extract the number from keys like File1, File2, etc.
+                        key_lower = key.lower()
+                        if key_lower.startswith("file") and len(key_lower) > 4:
+                            file_num = key_lower[4:]  # Get the number after "file"
+                            if file_num.isdigit():
+                                pls_entries[file_num] = pls_entries.get(file_num, {})
+                                pls_entries[file_num]['file'] = value
+                    elif line.lower().startswith("title") and "=" in line:
+                        # Parse TitleN=title
+                        key, value = line.split("=", 1)
+                        # Extract the number from keys like Title1, Title2, etc.
+                        key_lower = key.lower()
+                        if key_lower.startswith("title") and len(key_lower) > 5:
+                            title_num = key_lower[5:]  # Get the number after "title"
+                            if title_num.isdigit():
+                                pls_entries[title_num] = pls_entries.get(title_num, {})
+                                pls_entries[title_num]['title'] = value
+
+                # Add entries in numerical order
+                item_number = 1
+                for file_num in sorted(pls_entries.keys(), key=int):
+                    entry = pls_entries[file_num]
+                    if 'file' in entry:
+                        new_filepaths.append(entry['file'])
+                        # Use title if available, otherwise use filename
+                        display_title = entry.get('title', os.path.basename(entry['file']))
+                        new_display_items.append(f"{item_number}. {display_title}")
+                        item_number += 1
             else:
                 # Plain text file with one file path per line
                 with open(file_path, "r") as f:
@@ -3251,9 +3291,6 @@ class PlaylistWindow(QWidget):
                 self.main_window.set_playlist(self.playlist_filepaths)
 
             self.update()
-            QMessageBox.information(
-                self, "Playlist Editor", "Playlist loaded successfully!"
-            )
 
     def _handle_resize_press(self, event):
         """Handle resize handle press events."""
