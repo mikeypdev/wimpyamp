@@ -3143,7 +3143,7 @@ class PlaylistWindow(QWidget):
             if default_music_path:
                 initial_path = default_music_path
         
-        file_path, _ = QFileDialog.getOpenFileName(
+        file_path, _ = QFileDialog.getSaveFileName(
             self,
             "Save Playlist",
             initial_path,
@@ -3151,24 +3151,29 @@ class PlaylistWindow(QWidget):
             options=options,
         )
         if file_path:
+            # Determine the directory where the playlist file is being saved
+            playlist_dir = os.path.dirname(file_path)
+            
             # Determine if it's an M3U file or text file
             if file_path.lower().endswith((".m3u", ".m3u8")):
                 with open(file_path, "w") as f:
                     f.write("#EXTM3U\n")  # M3U header
                     for filepath in self.playlist_filepaths:
+                        # Convert absolute path to relative path with respect to playlist directory
+                        relative_path = os.path.relpath(filepath, start=playlist_dir)
                         # Try to get metadata if available
                         f.write(
                             f"#EXTINF:0,{os.path.basename(filepath)}\n"
                         )  # Placeholder duration
-                        f.write(f"{filepath}\n")
+                        f.write(f"{relative_path}\n")
             else:
                 # Save as text file with just file paths
                 with open(file_path, "w") as f:
                     for filepath in self.playlist_filepaths:
-                        f.write(filepath + "\n")
-            QMessageBox.information(
-                self, "Playlist Editor", "Playlist saved successfully!"
-            )
+                        # Convert absolute path to relative path with respect to playlist directory
+                        relative_path = os.path.relpath(filepath, start=playlist_dir)
+                        f.write(relative_path + "\n")
+
 
     def _load_playlist_from_file(self):
         options = QFileDialog.Options()
@@ -3190,6 +3195,9 @@ class PlaylistWindow(QWidget):
             new_filepaths = []
             new_display_items = []
 
+            # Get the directory of the playlist file to resolve relative paths
+            playlist_dir = os.path.dirname(file_path)
+
             if file_path.lower().endswith((".m3u", ".m3u8")):
                 # Parse M3U file format
                 with open(file_path, "r") as f:
@@ -3204,10 +3212,13 @@ class PlaylistWindow(QWidget):
                         and not line.startswith("#EXTM3U")
                         and not line.startswith("#EXTINF")
                     ):
-                        # This is a file path
-                        new_filepaths.append(line)
+                        # This is a file path - convert relative path to absolute if needed
+                        abs_path = line
+                        if not os.path.isabs(line):
+                            abs_path = os.path.join(playlist_dir, line)
+                        new_filepaths.append(abs_path)
                         new_display_items.append(
-                            f"{item_number}. {os.path.basename(line)}"
+                            f"{item_number}. {os.path.basename(abs_path)}"
                         )
                         item_number += 1
                     elif line.startswith("#EXTINF"):
@@ -3216,9 +3227,13 @@ class PlaylistWindow(QWidget):
                         if i < len(lines):
                             path_line = lines[i].strip()
                             if path_line:
-                                new_filepaths.append(path_line)
+                                # Convert relative path to absolute if needed
+                                abs_path = path_line
+                                if not os.path.isabs(path_line):
+                                    abs_path = os.path.join(playlist_dir, path_line)
+                                new_filepaths.append(abs_path)
                                 # Extract title from EXTINF line if available
-                                title = os.path.basename(path_line)
+                                title = os.path.basename(abs_path)
                                 parts = line.split(",", 1)
                                 if len(parts) > 1:
                                     title = parts[1]
@@ -3260,9 +3275,13 @@ class PlaylistWindow(QWidget):
                 for file_num in sorted(pls_entries.keys(), key=int):
                     entry = pls_entries[file_num]
                     if 'file' in entry:
-                        new_filepaths.append(entry['file'])
+                        # Convert relative path to absolute if needed
+                        abs_path = entry['file']
+                        if not os.path.isabs(entry['file']):
+                            abs_path = os.path.join(playlist_dir, entry['file'])
+                        new_filepaths.append(abs_path)
                         # Use title if available, otherwise use filename
-                        display_title = entry.get('title', os.path.basename(entry['file']))
+                        display_title = entry.get('title', os.path.basename(abs_path))
                         new_display_items.append(f"{item_number}. {display_title}")
                         item_number += 1
             else:
@@ -3271,9 +3290,13 @@ class PlaylistWindow(QWidget):
                     for line in f:
                         line = line.strip()
                         if line and not line.startswith("#"):
-                            new_filepaths.append(line)
+                            # Convert relative path to absolute if needed
+                            abs_path = line
+                            if not os.path.isabs(line):
+                                abs_path = os.path.join(playlist_dir, line)
+                            new_filepaths.append(abs_path)
                             new_display_items.append(
-                                f"{len(new_display_items) + 1}. {os.path.basename(line)}"
+                                f"{len(new_display_items) + 1}. {os.path.basename(abs_path)}"
                             )
 
             # Update internal lists
