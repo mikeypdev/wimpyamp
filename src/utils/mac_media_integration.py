@@ -107,6 +107,7 @@ class MacMediaIntegration:
             MPMediaItemPropertyArtist,
             MPMediaItemPropertyAlbumTitle,
             MPMediaItemPropertyPlaybackDuration,
+            MPMediaItemPropertyArtwork,
             MPNowPlayingInfoPropertyElapsedPlaybackTime,
         )
         from Foundation import NSNumber  # type: ignore[import-untyped]
@@ -163,14 +164,11 @@ class MacMediaIntegration:
             NSNumber.numberWithFloat_(current_position)
         )
 
-        # Update the system now playing info with metadata (this is safe)
-        print(f"Now Playing Info Keys: {list(now_playing_info.keys())}")
-        self.now_playing_info_center.setNowPlayingInfo_(now_playing_info)
-
-        # Handle album art separately to avoid crashes - we need to be very careful here
+        # Handle album art and add it to the now playing info - this is the key fix
         if album_art and len(album_art) > 0:
             try:
                 from Foundation import NSData, NSImage  # type: ignore[import-untyped]
+                from MediaPlayer import MPMediaItemArtwork  # type: ignore[import-untyped]
 
                 # Convert album art bytes to NSData
                 ns_data = NSData.dataWithBytes_length_(album_art, len(album_art))
@@ -180,17 +178,37 @@ class MacMediaIntegration:
 
                 if artwork_image:
                     print(f"Album art processed, size: {len(album_art)} bytes")
-                    # At this point we could try artwork support, but to be safe and avoid crashes,
-                    # we'll just note that we have artwork available
-                    print("Album art is available for this track")
+
+                    # Create MPMediaItemArtwork with the NSImage
+                    # The handler function must accept a CGSize parameter as required by the Objective-C API
+                    def image_getter(representation_size):
+                        return artwork_image
+
+                    # Create the media item artwork object
+                    media_artwork = (
+                        MPMediaItemArtwork.alloc().initWithBoundsSize_requestHandler_(
+                            artwork_image.size(), image_getter
+                        )
+                    )
+
+                    # Add the artwork to the now playing info
+                    now_playing_info[MPMediaItemPropertyArtwork] = media_artwork
+                    print("Album art successfully added to now playing info")
+                else:
+                    print("Failed to create NSImage from album art data")
             except Exception as e:
                 print(f"Error processing album art: {e}")
+                import traceback
+
+                traceback.print_exc()
         else:
             print("No album art available for this track")
 
-        print(
-            "Now Playing info updated with all track info (artwork may be available separately)"
-        )
+        # Update the system now playing info with metadata (this now includes artwork!)
+        print(f"Now Playing Info Keys: {list(now_playing_info.keys())}")
+        self.now_playing_info_center.setNowPlayingInfo_(now_playing_info)
+
+        print("Now Playing info updated with all track info including album art")
 
     def update_playback_state(self):
         """

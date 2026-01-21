@@ -471,10 +471,86 @@ class AudioEngine:
         return None
 
     def get_album_art(self):
-        """Returns embedded album art data of the loaded track."""
-        if self.metadata and "album_art" in self.metadata:
+        """Returns album art data of the loaded track - either embedded or from external file."""
+        import os
+
+        # First, try to get embedded album art from metadata
+        if (
+            self.metadata
+            and "album_art" in self.metadata
+            and self.metadata["album_art"]
+        ):
             return self.metadata["album_art"]
+
+        # If no embedded art, search for local folder images
+        if self.file_path:
+            folder_path = os.path.dirname(self.file_path)
+            album_art_file = self._search_local_album_art(folder_path)
+
+            if album_art_file:
+                try:
+                    # Read the image file and return its binary data
+                    with open(album_art_file, "rb") as f:
+                        return f.read()
+                except Exception as e:
+                    print(f"Error reading album art file {album_art_file}: {e}")
+
         return None
+
+    def _search_local_album_art(self, folder_path):
+        """Search for local album art files in the specified folder."""
+        import os
+
+        if not os.path.isdir(folder_path):
+            return None
+
+        # Define the search order according to the specification
+        search_files = [
+            "folder.jpg",
+            "folder.png",
+            "cover.jpg",
+            "cover.png",
+            "album.jpg",
+            "album.png",
+        ]
+
+        # First, check for standard filenames in order of preference
+        for filename in search_files:
+            file_path = os.path.join(folder_path, filename)
+            if os.path.exists(file_path):
+                return file_path
+
+        # If standard names aren't found, search for album title matches
+        # Get the album name from metadata if possible
+        metadata = self.get_metadata()
+        album_title = metadata.get("album", "Unknown")
+
+        # Normalize album title for matching
+        normalized_title = self._normalize_filename(album_title)
+
+        # Look for files starting with the album title
+        for filename in os.listdir(folder_path):
+            if os.path.isfile(os.path.join(folder_path, filename)):
+                name, ext = os.path.splitext(filename)
+                if ext.lower() in [".jpg", ".jpeg", ".png", ".bmp", ".gif"]:
+                    if self._normalize_filename(name).startswith(normalized_title):
+                        return os.path.join(folder_path, filename)
+
+        return None
+
+    def _normalize_filename(self, filename):
+        """Normalize a filename for comparison by converting to lowercase and handling special characters."""
+        import re
+
+        # Convert to lowercase
+        normalized = filename.lower()
+        # Replace common separators with spaces
+        normalized = re.sub(r"[-_\s]+", " ", normalized)
+        # Remove common characters that don't affect matching
+        normalized = re.sub(r"[^\w\s]", "", normalized)
+        # Split and rejoin to normalize multiple spaces to single spaces
+        normalized = " ".join(normalized.split())
+        return normalized
 
     def get_metadata(self):
         """Returns metadata of the loaded track."""
