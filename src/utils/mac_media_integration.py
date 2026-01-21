@@ -7,7 +7,16 @@ system-level media controls in Control Center and menu bar.
 """
 
 import platform
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Any
+
+# Conditional import for type checking purposes only
+if TYPE_CHECKING:
+    try:
+        import MediaPlayer  # type: ignore  # noqa: F401
+        import Foundation  # type: ignore  # noqa: F401
+    except ImportError:
+        # These modules are not available on non-macOS platforms
+        pass
 
 
 def is_macos():
@@ -86,8 +95,10 @@ class MacMediaIntegration:
         )
 
         self.main_window = main_window
-        self.now_playing_info_center = MPNowPlayingInfoCenter.defaultCenter()
-        self.remote_command_center = MPRemoteCommandCenter.sharedCommandCenter()
+
+        # Type annotation for the PyObjC objects
+        self.now_playing_info_center: Any = MPNowPlayingInfoCenter.defaultCenter()
+        self.remote_command_center: Any = MPRemoteCommandCenter.sharedCommandCenter()
 
         # Set up the remote command handlers
         self.setup_remote_commands()
