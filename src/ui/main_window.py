@@ -220,6 +220,24 @@ class MainWindow(QWidget):
         # Initialize UI state
         self.ui_state = UIState()
 
+        # Initialize macOS media integration if on macOS
+        self.mac_media_integration = None
+        try:
+            from ..utils.mac_media_integration import create_mac_media_integration
+
+            print("Attempting to create macOS media integration...")
+            self.mac_media_integration = create_mac_media_integration(self)
+            if self.mac_media_integration:
+                print("macOS media integration successfully loaded")
+            else:
+                print(
+                    "macOS media integration not loaded (likely not on macOS or PyObjC unavailable)"
+                )
+        except ImportError as e:
+            print(
+                f"Could not import mac_media_integration: {e}"
+            )  # pyobjc not available
+
         # Set up keyboard shortcuts for media controls
         self.setup_media_shortcuts()
 
@@ -1004,7 +1022,10 @@ class MainWindow(QWidget):
         # This callback receives position updates from the audio engine
         # We store this info so the UI timer can use it consistently
         # The actual UI update is still handled by the timer to avoid race conditions
-        pass  # The audio engine's current_position is already updated, just let the timer handle the UI update
+
+        # Update macOS media integration if available
+        if hasattr(self, "mac_media_integration") and self.mac_media_integration:
+            self.mac_media_integration.update_playback_state()
 
     def update_ui_from_engine(self):
         """Update UI based on audio engine state."""
@@ -1104,6 +1125,14 @@ class MainWindow(QWidget):
                 if self.album_art_window.isVisible():
                     self.album_art_window.refresh_album_art(self.audio_engine)
 
+                # Update macOS media integration with new track info
+                if (
+                    hasattr(self, "mac_media_integration")
+                    and self.mac_media_integration
+                ):
+                    self.mac_media_integration.update_now_playing_info()
+                    self.mac_media_integration.update_playback_state()
+
                 self.update()
                 return True
         return False
@@ -1120,6 +1149,11 @@ class MainWindow(QWidget):
             if self.album_art_window.isVisible():
                 self.album_art_window.refresh_album_art(self.audio_engine)
 
+            # Update macOS media integration
+            if hasattr(self, "mac_media_integration") and self.mac_media_integration:
+                self.mac_media_integration.update_now_playing_info()
+                self.mac_media_integration.update_playback_state()
+
     def play_previous_track(self):
         """Play the previous track in the playlist."""
         if self.playlist and self.current_track_index > 0:
@@ -1129,6 +1163,11 @@ class MainWindow(QWidget):
             if self.album_art_window.isVisible():
                 self.album_art_window.refresh_album_art(self.audio_engine)
 
+            # Update macOS media integration
+            if hasattr(self, "mac_media_integration") and self.mac_media_integration:
+                self.mac_media_integration.update_now_playing_info()
+                self.mac_media_integration.update_playback_state()
+
     def play_selected_track(self, index):
         """Play the track at the given index when clicked in the playlist."""
         self.play_track_at_index(index)
@@ -1137,6 +1176,11 @@ class MainWindow(QWidget):
         if self.album_art_window.isVisible():
             self.album_art_window.refresh_album_art(self.audio_engine)
 
+        # Update macOS media integration
+        if hasattr(self, "mac_media_integration") and self.mac_media_integration:
+            self.mac_media_integration.update_now_playing_info()
+            self.mac_media_integration.update_playback_state()
+
     def _handle_stop_action(self):
         """Handle the stop action from media key or stop button."""
         self.audio_engine.stop()
@@ -1144,6 +1188,10 @@ class MainWindow(QWidget):
         # Make sure the playlist window knows which track was playing so it can be restarted
         if hasattr(self, "playlist_window") and self.playlist_window:
             self.playlist_window.set_current_track_index(self.current_track_index)
+
+        # Update macOS media integration with new playback state
+        if hasattr(self, "mac_media_integration") and self.mac_media_integration:
+            self.mac_media_integration.update_playback_state()
 
     def check_track_completion(self):
         """Check if the current track has finished playing and advance if needed."""
@@ -1978,6 +2026,10 @@ class MainWindow(QWidget):
                         selected_track_index = 0
                     self.play_track_at_index(selected_track_index)
 
+        # Update macOS media integration with new playback state
+        if hasattr(self, "mac_media_integration") and self.mac_media_integration:
+            self.mac_media_integration.update_playback_state()
+
     def load_and_play_file(self, file_path):
         """
         Load and play a file passed from command line or file opening event.
@@ -2329,6 +2381,10 @@ class MainWindow(QWidget):
         if hasattr(self, "visualization_timer"):
             self.visualization_timer.stop()
 
+        # Clean up macOS media integration
+        if hasattr(self, "mac_media_integration") and self.mac_media_integration:
+            self.mac_media_integration.cleanup()
+
         event.accept()
 
     def _initiate_shutdown(self):
@@ -2367,10 +2423,14 @@ class MainWindow(QWidget):
         if hasattr(self, "audio_engine"):
             self.audio_engine.stop()
 
-        # 4. Save current window visibility states to preferences
+        # 4. Clean up macOS media integration
+        if hasattr(self, "mac_media_integration") and self.mac_media_integration:
+            self.mac_media_integration.cleanup()
+
+        # 5. Save current window visibility states to preferences
         self._save_window_visibility_states()
 
-        # 5. Save main window position
+        # 6. Save main window position
         self.preferences.set_main_window_position(self.x(), self.y())
 
     def _save_window_visibility_states(self):
