@@ -1547,6 +1547,14 @@ class MainWindow(QWidget):
                             and self.album_art_window.isVisible()
                         ):
                             self.album_art_window.refresh_album_art(self.audio_engine)
+
+                        # Update macOS media integration with new track info
+                        if (
+                            hasattr(self, "mac_media_integration")
+                            and self.mac_media_integration
+                        ):
+                            self.mac_media_integration.update_now_playing_info()
+                            self.mac_media_integration.update_playback_state()
                     else:
                         self.ui_state.current_track_title = "Error loading track"
 
@@ -2086,6 +2094,14 @@ class MainWindow(QWidget):
                     and self.album_art_window.isVisible()
                 ):
                     self.album_art_window.refresh_album_art(self.audio_engine)
+
+                # Update macOS media integration with new track info
+                if (
+                    hasattr(self, "mac_media_integration")
+                    and self.mac_media_integration
+                ):
+                    self.mac_media_integration.update_now_playing_info()
+                    self.mac_media_integration.update_playback_state()
 
                 return True
             else:

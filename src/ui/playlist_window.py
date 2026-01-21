@@ -3581,6 +3581,14 @@ class PlaylistWindow(QWidget):
 
                     # Update playlist window to show currently playing track
                     self.set_current_track_index(0)
+
+                    # Update macOS media integration with new track info
+                    if (
+                        hasattr(self.main_window, "mac_media_integration")
+                        and self.main_window.mac_media_integration
+                    ):
+                        self.main_window.mac_media_integration.update_now_playing_info()
+                        self.main_window.mac_media_integration.update_playback_state()
                 else:
                     self.main_window.current_track_title = "Error loading track"
             # Update the visual state after action
