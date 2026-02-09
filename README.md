@@ -34,11 +34,11 @@ A: You have a CD/DVD drive? Wow. I’ll keep it in mind.
 
 Linux users may need to hold down the Super key (CMD/WIN) while using the mouse to move the app windows. Snapping and docking is not supported on Linux.
 
-## Developer Notes
-
 ### Python
 
 WimPyAmp works with Python3 on Mac, Linux, and Windows. Releases that bundle Python are currently available for Mac on Intel and Apple Silicon. Other platforms will (eventually) follow.
+
+## Developer Notes
 
 ### Makefile
 
@@ -50,13 +50,14 @@ Windows users can either install WSL to use the Makefile, or use Powershell scri
 
 Intel Mac Python support is fading away, so pay attention to supported libraries if you are on an old Mac.
 
-### AI Coding Agents
+### Libraries and Specs
 
-This project was entirely coded by AI agents, mostly Gemini and Qwen, using spec-driven development (*not* “vibe-coding”). It's really just a framework for some excellent Python libraries, including librosa, mutagen, Pillow, and others, connected to a PySide6 UI that renders bitmaps from Winamp skin archives.
+WimPyAmp is really just a framework for some excellent Python libraries, including librosa, mutagen, Pillow, and others, connected to a PySide6 UI that renders bitmaps from Winamp skin archives.
 
-The specs are in the `docs/` directory, along with some original Winamp skinning guidelines. If you add a feature, you must create a spec first. Let the AI help you, and force the AI to review it before implementation.
+Specs for implemented features are in the `docs/` directory, along with some original Winamp skinning guidelines.
 
-There is an `AGENT-lite.md` file that attempts to provide low-capability agents with instructions to avoid doing dumb things. It kinda works, sometimes.
+There is an `AGENTS.md` file to help coding agents, tested with Qwen and Gemini.
+There is also an `AGENT-lite.md` file that attempts to provide low-capability agents with instructions to avoid doing dumb things. It kinda works, sometimes.
 
 ### Thanks
 
