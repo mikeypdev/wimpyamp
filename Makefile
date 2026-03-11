@@ -89,6 +89,8 @@ help:
 	@echo "  type-check   - Run type checker (mypy)"
 	@echo "  test         - Run tests (pytest)"
 	@echo "  check        - Run all quality checks (lint, format, type-check, test)"
+	@echo "  website-serve - Start local web server for website preview"
+	@echo "  website-deploy - Show deployment instructions"
 	@echo "  help         - Show this help message"
 
 # --- Distribution & Versioning ---
@@ -127,3 +129,16 @@ bump-minor:
 .PHONY: bump-major
 bump-major:
 	$(VENV_DIR)/bin/bump2version major
+
+# --- Website ---
+
+.PHONY: website-serve
+website-serve:
+	@echo "Starting local server at http://localhost:8000"
+	@echo "Press Ctrl+C to stop"
+	cd website && $(PYTHON) -m http.server 8000
+
+.PHONY: website-deploy
+website-deploy:
+	@echo "Push to main branch to trigger automatic deployment"
+	@echo "GitHub Actions will deploy to gh-pages"
