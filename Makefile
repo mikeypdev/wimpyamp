@@ -95,6 +95,10 @@ help:
 
 # --- Distribution & Versioning ---
 
+OS_NAME := $(shell uname -s)
+DETECTED_ARCH := $(shell uname -m)
+ARCH ?= $(DETECTED_ARCH)
+
 .PHONY: dist
 dist:
 	@echo "Building application for distribution..."
@@ -108,14 +112,18 @@ clean-dist:
 
 .PHONY: dist-archive
 dist-archive: dist
-	@echo "Creating distribution archive for version $(VERSION)..."
-	@if [ "$(shell uname)" = "Darwin" ]; then \
+	@echo "Creating distribution archive for version $(VERSION) on $(OS_NAME) ($(ARCH))..."
+	@if [ "$(OS_NAME)" = "Darwin" ]; then \
 		echo "Performing ad-hoc code signing..."; \
 		codesign --force --deep --sign - dist/WimPyAmp.app; \
 		echo "Creating DMG archive..."; \
-		hdiutil create -srcfolder dist/WimPyAmp.app -volname "WimPyAmp $(VERSION)" dist/WimPyAmp-macOS-$(VERSION).dmg; \
+		hdiutil create -srcfolder dist/WimPyAmp.app -volname "WimPyAmp $(VERSION)" dist/WimPyAmp-macOS-$(ARCH)-v$(VERSION).dmg; \
+	elif [ "$(OS_NAME)" = "Linux" ]; then \
+		echo "Creating tarball for Linux..."; \
+		cd dist && tar -czf WimPyAmp-Linux-$(ARCH)-v$(VERSION).tar.gz WimPyAmp; \
 	else \
-		echo "Archiving for Windows/Linux is not yet configured."; \
+		echo "Creating ZIP archive for Windows..."; \
+		powershell -Command "Compress-Archive -Path dist/WimPyAmp -DestinationPath dist/WimPyAmp-Windows-$(ARCH)-v$(VERSION).zip -Force"; \
 	fi
 
 .PHONY: bump-patch
@@ -129,6 +137,19 @@ bump-minor:
 .PHONY: bump-major
 bump-major:
 	$(VENV_DIR)/bin/bump2version major
+
+.PHONY: push-tags
+push-tags:
+	git push && git push --tags
+
+.PHONY: release-patch
+release-patch: bump-patch push-tags
+
+.PHONY: release-minor
+release-minor: bump-minor push-tags
+
+.PHONY: release-major
+release-major: bump-major push-tags
 
 # --- Website ---
 
