@@ -1,10 +1,28 @@
 # Makefile for WimPyAmp
 
-# Variables
-PYTHON := python3
-VENV_DIR := venv
-VENV_PYTHON := $(VENV_DIR)/bin/python
-VENV_PIP := $(VENV_DIR)/bin/pip
+# OS detection and path configuration
+OS_NAME := $(shell uname -s)
+DETECTED_ARCH := $(shell uname -m)
+ARCH ?= $(DETECTED_ARCH)
+
+ifeq ($(OS),Windows_NT)
+    # Windows-specific settings (works with Git Bash/MSYS make)
+    VENV_BIN_DIR := Scripts
+    PYTHON := python
+    VENV_DIR := venv
+    VENV_PYTHON := $(VENV_DIR)/$(VENV_BIN_DIR)/python.exe
+    VENV_PIP := $(VENV_DIR)/$(VENV_BIN_DIR)/pip.exe
+    IS_WINDOWS := 1
+else
+    # Unix-like settings (Linux, macOS)
+    VENV_BIN_DIR := bin
+    PYTHON := python3
+    VENV_DIR := venv
+    VENV_PYTHON := $(VENV_DIR)/$(VENV_BIN_DIR)/python
+    VENV_PIP := $(VENV_DIR)/$(VENV_BIN_DIR)/pip
+    IS_WINDOWS := 0
+endif
+
 REQUIREMENTS := requirements.txt
 VERSION := $(shell cat VERSION)
 
@@ -80,9 +98,9 @@ help:
 	@echo "  dist         - Build the application for distribution"
 	@echo "  clean-dist   - Remove distribution build artifacts"
 	@echo "  dist-archive - Create a final distribution archive (e.g., .dmg)"
-	@echo "  bump-patch   - Release a new patch version (e.g., 1.0.0 -> 1.0.1)"
-	@echo "  bump-minor   - Release a new minor version (e.g., 1.0.0 -> 1.1.0)"
-	@echo "  bump-major   - Release a new major version (e.g., 1.0.0 -> 2.0.0)"
+	@echo "  bump-patch   - Release a new patch version"
+	@echo "  bump-minor   - Release a new minor version"
+	@echo "  bump-major   - Release a new major version"
 	@echo "  lint         - Run linter (ruff)"
 	@echo "  format       - Format code (black)"
 	@echo "  format-check - Check code formatting (black --check)"
@@ -95,15 +113,11 @@ help:
 
 # --- Distribution & Versioning ---
 
-OS_NAME := $(shell uname -s)
-DETECTED_ARCH := $(shell uname -m)
-ARCH ?= $(DETECTED_ARCH)
-
 .PHONY: dist
 dist:
 	@echo "Building application for distribution..."
 	$(VENV_PIP) install pyinstaller
-	$(VENV_DIR)/bin/pyinstaller WimPyAmp.spec
+	$(VENV_PYTHON) -m PyInstaller WimPyAmp.spec
 
 .PHONY: clean-dist
 clean-dist:
@@ -118,25 +132,27 @@ dist-archive: dist
 		codesign --force --deep --sign - dist/WimPyAmp.app; \
 		echo "Creating DMG archive..."; \
 		hdiutil create -srcfolder dist/WimPyAmp.app -volname "WimPyAmp $(VERSION)" dist/WimPyAmp-macOS-$(ARCH)-v$(VERSION).dmg; \
+	elif [ "$(IS_WINDOWS)" = "1" ]; then \
+		echo "Creating ZIP archive for Windows..."; \
+		powershell -Command "Compress-Archive -Path dist/WimPyAmp -DestinationPath dist/WimPyAmp-Windows-$(ARCH)-v$(VERSION).zip -Force"; \
 	elif [ "$(OS_NAME)" = "Linux" ]; then \
 		echo "Creating tarball for Linux..."; \
 		cd dist && tar -czf WimPyAmp-Linux-$(ARCH)-v$(VERSION).tar.gz WimPyAmp; \
 	else \
-		echo "Creating ZIP archive for Windows..."; \
-		powershell -Command "Compress-Archive -Path dist/WimPyAmp -DestinationPath dist/WimPyAmp-Windows-$(ARCH)-v$(VERSION).zip -Force"; \
+		echo "Archiving for unknown OS: $(OS_NAME)"; \
 	fi
 
 .PHONY: bump-patch
 bump-patch:
-	$(VENV_DIR)/bin/bump2version patch
+	$(VENV_PYTHON) -m bumpversion patch
 
 .PHONY: bump-minor
 bump-minor:
-	$(VENV_DIR)/bin/bump2version minor
+	$(VENV_PYTHON) -m bumpversion minor
 
 .PHONY: bump-major
 bump-major:
-	$(VENV_DIR)/bin/bump2version major
+	$(VENV_PYTHON) -m bumpversion major
 
 .PHONY: push-tags
 push-tags:

@@ -25,11 +25,12 @@ jobs:
   build:
     needs: check
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: macos-latest
             arch: arm64
-          - os: macos-13
+          - os: macos-15-intel
             arch: x86_64
           - os: windows-latest
             arch: x86_64
