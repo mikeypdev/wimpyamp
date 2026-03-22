@@ -36,7 +36,7 @@ exe = EXE(
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
-    codesign_identity=os.environ.get('APPLE_SIGNING_IDENTITY') or None,  # Set to your Developer ID if available, e.g., "Developer ID Application: Your Name (XXXXXXXXXX)"
+    codesign_identity=os.environ.get('APPLE_SIGNING_IDENTITY') or '',  # Set to your Developer ID if available, e.g., "Developer ID Application: Your Name (XXXXXXXXXX)"
     entitlements_file='macos.entitlements' if os.environ.get('APPLE_SIGNING_IDENTITY') else None,  # Path to entitlements file if needed for specific macOS permissions/features
     icon='resources/icons/wimpyamp.ico',  # Icon for Windows and Linux
 )

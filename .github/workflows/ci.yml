@@ -52,6 +52,29 @@ jobs:
         make setup
         ARCH=${{ matrix.arch }} make dist-archive
 
+    - name: Import Code Signing Certificate
+      if: matrix.os == 'macos-latest' || matrix.os == 'macos-15-intel'
+      run: |
+        # Create temporary keychain
+        KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+        security create-keychain -p "" $KEYCHAIN_PATH
+        security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+        security unlock-keychain -p "" $KEYCHAIN_PATH
+
+        # Import certificate and private key
+        echo "$APPLE_SIGNING_CERTIFICATE_P12_BASE64" | base64 --decode -o certificate.p12
+        security import certificate.p12 -P "$APPLE_SIGNING_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+        security list-keychain -d $KEYCHAIN_PATH
+
+        # Set keychain list
+        security default-keychain -d $KEYCHAIN_PATH -s user
+
+        # Verify certificate is available
+        security find-identity -v -p codesigning
+      env:
+        APPLE_SIGNING_CERTIFICATE_P12_BASE64: ${{ secrets.APPLE_SIGNING_CERTIFICATE_P12_BASE64 }}
+        APPLE_SIGNING_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_SIGNING_CERTIFICATE_PASSWORD }}
+
     - name: Create signed and notarized distribution (tags only)
       if: matrix.os == 'macos-latest' || matrix.os == 'macos-15-intel'
       run: |
