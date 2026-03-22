@@ -40,4 +40,5 @@ resources/default_skin/temp_extracted_skin/**
 dist/**
 build/**
 test_data/**
+.env
 

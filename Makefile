@@ -26,6 +26,22 @@ endif
 REQUIREMENTS := requirements.txt
 VERSION := $(shell cat VERSION)
 
+# Load Apple credentials from .env if it exists
+ifneq ($(wildcard .env),)
+    # Use include and strip quotes to ensure variables are usable in both make and shell
+    include .env
+    export
+endif
+
+# Ensure these variables don't have literal quotes from .env
+APPLE_SIGNING_IDENTITY := $(subst ",,$(APPLE_SIGNING_IDENTITY))
+APPLE_ID := $(subst ",,$(APPLE_ID))
+APPLE_ID_PASSWORD := $(subst ",,$(APPLE_ID_PASSWORD))
+APPLE_TEAM_ID := $(subst ",,$(APPLE_TEAM_ID))
+
+# Default notarization state (can be overridden by command line)
+NOTARIZE ?= false
+
 # Default target
 .PHONY: all
 all: setup run
@@ -83,7 +99,7 @@ test:
 	$(VENV_PYTHON) -m pytest tests/ -v
 
 .PHONY: check
-check: lint format-check type-check
+check: lint format-check type-check test
 
 # Help documentation
 .PHONY: help
@@ -97,7 +113,9 @@ help:
 	@echo "  clean        - Remove virtual environment"
 	@echo "  dist         - Build the application for distribution"
 	@echo "  clean-dist   - Remove distribution build artifacts"
-	@echo "  dist-archive - Create a final distribution archive (e.g., .dmg)"
+	@echo "  dist-archive - Create a final distribution archive (replaces existing)"
+	@echo "  dist-notarize- Build, sign, and notarize macOS distribution"
+	@echo "  verify-notarization - Check recent notarization submissions status"
 	@echo "  bump-patch   - Release a new patch version"
 	@echo "  bump-minor   - Release a new minor version"
 	@echo "  bump-major   - Release a new major version"
@@ -117,7 +135,7 @@ help:
 dist:
 	@echo "Building application for distribution..."
 	$(VENV_PIP) install pyinstaller
-	$(VENV_PYTHON) -m PyInstaller WimPyAmp.spec
+	$(VENV_PYTHON) -m PyInstaller --noconfirm WimPyAmp.spec
 
 .PHONY: clean-dist
 clean-dist:
@@ -128,19 +146,75 @@ clean-dist:
 dist-archive: dist
 	@echo "Creating distribution archive for version $(VERSION) on $(OS_NAME) ($(ARCH))..."
 	@if [ "$(OS_NAME)" = "Darwin" ]; then \
-		echo "Performing ad-hoc code signing..."; \
-		codesign --force --deep --sign - dist/WimPyAmp.app; \
+		echo "Cleaning old archives..."; \
+		rm -f dist/WimPyAmp-macOS-$(ARCH)-v$(VERSION).dmg; \
+		echo "Repairing bundle permissions..."; \
+		xattr -cr dist/WimPyAmp.app || true; \
+		if [ "$(NOTARIZE)" = "true" ]; then \
+			if [ -z "$(APPLE_SIGNING_IDENTITY)" ]; then \
+				echo "Error: APPLE_SIGNING_IDENTITY not set in .env"; \
+				exit 1; \
+			fi; \
+			if [ -z "$(APPLE_ID)" ] || [ -z "$(APPLE_ID_PASSWORD)" ] || [ -z "$(APPLE_TEAM_ID)" ]; then \
+				echo "Error: Missing notarization credentials (APPLE_ID, APPLE_ID_PASSWORD, or APPLE_TEAM_ID) in .env"; \
+				exit 1; \
+			fi; \
+			echo "Signing app with Hardened Runtime using identity: $(APPLE_SIGNING_IDENTITY)"; \
+			find dist/WimPyAmp.app/Contents/Frameworks -type f \( -name "*.dylib" -or -name "*.so" -or -name "WimPyAmp" -or -not -name "*.*" \) -not -path "*/_CodeSignature/*" -print0 | xargs -0 codesign --force --verify --verbose --timestamp --options runtime --sign "$(APPLE_SIGNING_IDENTITY)"; \
+			find dist/WimPyAmp.app/Contents/Frameworks -type d -name "*.framework" -print0 | xargs -0 codesign --force --verify --verbose --timestamp --options runtime --sign "$(APPLE_SIGNING_IDENTITY)"; \
+			find dist/WimPyAmp.app/Contents/MacOS -type f -print0 | xargs -0 codesign --force --verify --verbose --timestamp --options runtime --entitlements macos.entitlements --sign "$(APPLE_SIGNING_IDENTITY)"; \
+			echo "Performing final deep-sign on app bundle..."; \
+			codesign --force --verify --verbose --deep --options runtime --timestamp --entitlements macos.entitlements --sign "$(APPLE_SIGNING_IDENTITY)" dist/WimPyAmp.app; \
+			echo "Verifying local signature and Gatekeeper compliance..."; \
+			codesign --verify --deep --verbose=2 dist/WimPyAmp.app; \
+			echo "Note: spctl --assess will fail until app is notarized."; \
+			spctl --assess --verbose --type execute dist/WimPyAmp.app || true; \
+		else \
+			echo "Performing ad-hoc code signing..."; \
+			codesign --force --deep --sign - dist/WimPyAmp.app; \
+		fi; \
 		echo "Creating DMG archive..."; \
-		hdiutil create -srcfolder dist/WimPyAmp.app -volname "WimPyAmp $(VERSION)" dist/WimPyAmp-macOS-$(ARCH)-v$(VERSION).dmg; \
+		hdiutil create -quiet -srcfolder dist/WimPyAmp.app -volname "WimPyAmp $(VERSION)" dist/WimPyAmp-macOS-$(ARCH)-v$(VERSION).dmg; \
+		if [ "$(NOTARIZE)" = "true" ]; then \
+			echo "Signing and submitting DMG..."; \
+			codesign --force --verify --verbose --timestamp --sign "$(APPLE_SIGNING_IDENTITY)" dist/WimPyAmp-macOS-$(ARCH)-v$(VERSION).dmg; \
+			xcrun notarytool submit "dist/WimPyAmp-macOS-$(ARCH)-v$(VERSION).dmg" --apple-id "$(APPLE_ID)" --password "$(APPLE_ID_PASSWORD)" --team-id "$(APPLE_TEAM_ID)" --no-progress --wait --timeout 20m; \
+			echo "Stapling ticket..."; \
+			xcrun stapler staple "dist/WimPyAmp-macOS-$(ARCH)-v$(VERSION).dmg"; \
+			echo "Verifying stapled ticket..."; \
+			xcrun stapler validate "dist/WimPyAmp-macOS-$(ARCH)-v$(VERSION).dmg"; \
+			echo "Verifying Gatekeeper acceptance..."; \
+			spctl --assess --verbose --type execute "dist/WimPyAmp-macOS-$(ARCH)-v$(VERSION).dmg"; \
+			echo "Notarization complete!"; \
+		fi; \
 	elif [ "$(IS_WINDOWS)" = "1" ]; then \
+		echo "Cleaning old archives..."; \
+		rm -f dist/WimPyAmp-Windows-$(ARCH)-v$(VERSION).zip; \
 		echo "Creating ZIP archive for Windows..."; \
 		powershell -Command "Compress-Archive -Path dist/WimPyAmp -DestinationPath dist/WimPyAmp-Windows-$(ARCH)-v$(VERSION).zip -Force"; \
 	elif [ "$(OS_NAME)" = "Linux" ]; then \
+		echo "Cleaning old archives..."; \
+		rm -f dist/WimPyAmp-Linux-$(ARCH)-v$(VERSION).tar.gz; \
 		echo "Creating tarball for Linux..."; \
 		cd dist && tar -czf WimPyAmp-Linux-$(ARCH)-v$(VERSION).tar.gz WimPyAmp; \
 	else \
 		echo "Archiving for unknown OS: $(OS_NAME)"; \
 	fi
+
+.PHONY: dist-notarize
+dist-notarize:
+	@echo "Building, signing, and notarizing macOS distribution..."
+	$(MAKE) dist-archive NOTARIZE=true
+
+.PHONY: verify-notarization
+verify-notarization:
+	@echo "Checking recent notarization submissions..."
+	@if [ -z "$(APPLE_ID)" ] || [ -z "$(APPLE_ID_PASSWORD)" ] || [ -z "$(APPLE_TEAM_ID)" ]; then \
+		echo "Error: Missing notarization credentials (APPLE_ID, APPLE_ID_PASSWORD, or APPLE_TEAM_ID) in .env"; \
+		exit 1; \
+	fi
+	xcrun notarytool history --limit 10 --apple-id "$(APPLE_ID)" --password "$(APPLE_ID_PASSWORD)" --team-id "$(APPLE_TEAM_ID)"
+
 
 .PHONY: bump-patch
 bump-patch:

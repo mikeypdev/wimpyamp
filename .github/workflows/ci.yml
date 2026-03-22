@@ -52,6 +52,17 @@ jobs:
         make setup
         ARCH=${{ matrix.arch }} make dist-archive
 
+    - name: Create signed and notarized distribution (tags only)
+      if: matrix.os == 'macos-latest' || matrix.os == 'macos-15-intel'
+      run: |
+        make setup
+        ARCH=${{ matrix.arch }} make dist-archive NOTARIZE=true
+      env:
+        APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+        APPLE_ID: ${{ secrets.APPLE_ID }}
+        APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+        APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
