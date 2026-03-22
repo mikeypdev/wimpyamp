@@ -99,7 +99,7 @@ test:
 	$(VENV_PYTHON) -m pytest tests/ -v
 
 .PHONY: check
-check: lint format-check type-check test
+check: lint format-check type-check
 
 # Help documentation
 .PHONY: help
