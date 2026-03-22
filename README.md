@@ -57,7 +57,6 @@ WimPyAmp is really just a framework for some excellent Python libraries, includi
 Specs for implemented features are in the `docs/` directory, along with some original Winamp skinning guidelines.
 
 There is an `AGENTS.md` file to help coding agents, tested with Qwen and Gemini.
-There is also an `AGENT-lite.md` file that attempts to provide low-capability agents with instructions to avoid doing dumb things. It kinda works, sometimes.
 
 ### Thanks
 

@@ -2,18 +2,6 @@
 
 ## Agent Configuration
 
-This project uses lightweight agent operational directives.
-
-**READ FIRST: [AGENT-lite.md](./AGENT-lite.md)**
-@./AGENT-lite.md
-
-All agent interactions must follow the protocols defined in AGENT-lite.md, including:
-- No autonomous decisions
-- Inherent limitations
-- Operational process
-- Token economy guideline
-- Human interaction protocol
-
 **Agent Runtime Monitoring:**
 When running the application, agents should monitor the console or debug output for any errors or warnings. If issues are detected in the output, the agent should offer to fix them proactively.
 
