@@ -47,10 +47,20 @@ jobs:
       with:
         python-version: "3.13"
 
-    - name: Create distribution
+    - name: Create distribution (non-macOS or non-tagged)
+      if: matrix.os != 'macos-latest' && matrix.os != 'macos-15-intel'
       run: |
         make setup
         ARCH=${{ matrix.arch }} make dist-archive
+
+    - name: Check entitlements file exists
+      if: matrix.os == 'macos-latest' || matrix.os == 'macos-15-intel'
+      run: |
+        if [ ! -f "macos.entitlements" ]; then
+          echo "ERROR: macos.entitlements not found in repository"
+          exit 1
+        fi
+        echo "✅ macos.entitlements found"
 
     - name: Import Code Signing Certificate
       if: matrix.os == 'macos-latest' || matrix.os == 'macos-15-intel'
@@ -64,13 +74,13 @@ jobs:
         # Import certificate and private key
         echo "$APPLE_SIGNING_CERTIFICATE_P12_BASE64" | base64 --decode -o certificate.p12
         security import certificate.p12 -P "$APPLE_SIGNING_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
-        security list-keychain -d $KEYCHAIN_PATH
 
-        # Set keychain list
-        security default-keychain -d $KEYCHAIN_PATH -s user
+        # Set keychain as default
+        security default-keychain -s user $KEYCHAIN_PATH
 
         # Verify certificate is available
         security find-identity -v -p codesigning
+        echo "✅ Certificate imported successfully"
       env:
         APPLE_SIGNING_CERTIFICATE_P12_BASE64: ${{ secrets.APPLE_SIGNING_CERTIFICATE_P12_BASE64 }}
         APPLE_SIGNING_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_SIGNING_CERTIFICATE_PASSWORD }}
@@ -78,12 +88,21 @@ jobs:
     - name: Create signed and notarized distribution (tags only)
       if: matrix.os == 'macos-latest' || matrix.os == 'macos-15-intel'
       run: |
+        make setup
         ARCH=${{ matrix.arch }} make dist-archive NOTARIZE=true
       env:
         APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
         APPLE_ID: ${{ secrets.APPLE_ID }}
         APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
         APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      timeout-minutes: 30
+
+    - name: Cleanup Keychain
+      if: always() && (matrix.os == 'macos-latest' || matrix.os == 'macos-15-intel')
+      run: |
+        KEYCHAIN_PATH="/Users/runner/work/_temp/app-signing.keychain-db"
+        security delete-keychain $KEYCHAIN_PATH || true
+        echo "✅ Keychain cleaned up"
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
@@ -116,7 +135,7 @@ jobs:
         name: Release ${{ github.ref_name }}
         body: |
           Automated release for version ${{ github.ref_name }}.
-          
+
           This release contains builds for macOS (ARM64 & x86_64), Windows (x86_64), and Linux (x86_64).
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
