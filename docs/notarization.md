@@ -233,8 +233,8 @@ The CI workflow automatically creates signed and notarized macOS builds for tagg
 
 | Trigger | macOS Build | Signing | Notarization |
 |---------|-------------|---------|--------------|
-| Push to main | ✅ Builds | ❌ Ad-hoc only | ❌ No |
-| Pull request | ✅ Builds | ❌ Ad-hoc only | ❌ No |
+| Push to main | ✅ Checks only | ❌ No | ❌ No |
+| Pull request | ✅ Checks only | ❌ No | ❌ No |
 | Tagged release | ✅ Builds | ✅ Signed | ✅ Yes |
 
 **Key benefits:**
@@ -256,15 +256,46 @@ Go to **Settings → Secrets and variables → Actions** and add:
 The `.github/workflows/ci.yml` already has this configuration:
 
 ```yaml
-# Regular builds (pushes, PRs) - fast, ad-hoc signing only
-- name: Create distribution
+# Non-tag builds run checks only; archives are created on tagged releases
+# Tagged releases - full signing and notarization
+- name: Import Code Signing Certificate
+  if: startsWith(github.ref, 'refs/tags/v') && (matrix.os == 'macos-latest' || matrix.os == 'macos-15-intel')
+  run: |
+    KEYCHAIN_PATH="/Users/runner/work/_temp/app-signing.keychain-db"
+    security create-keychain -p "" $KEYCHAIN_PATH
+    security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+    security unlock-keychain -p "" $KEYCHAIN_PATH
+    echo "$APPLE_SIGNING_CERTIFICATE_P12_BASE64" | base64 --decode -o certificate.p12
+    security import certificate.p12 -P "$APPLE_SIGNING_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+    security default-keychain -d user -s $KEYCHAIN_PATH
+    security find-identity -v -p codesigning
+
+- name: Create signed and notarized distribution (tags only)
+  if: startsWith(github.ref, 'refs/tags/v') && (matrix.os == 'macos-latest' || matrix.os == 'macos-15-intel')
   run: |
     make setup
-    ARCH=${{ matrix.arch }} make dist-archive
+    ARCH=${{ matrix.arch }} make dist-archive NOTARIZE=true
+  env:
+    APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+    APPLE_ID: ${{ secrets.APPLE_ID }}
+    APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+    APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
 # Tagged releases - full signing and notarization
+- name: Import Code Signing Certificate
+  if: startsWith(github.ref, 'refs/tags/v') && (matrix.os == 'macos-latest' || matrix.os == 'macos-15-intel')
+  run: |
+    KEYCHAIN_PATH="/Users/runner/work/_temp/app-signing.keychain-db"
+    security create-keychain -p "" $KEYCHAIN_PATH
+    security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+    security unlock-keychain -p "" $KEYCHAIN_PATH
+    echo "$APPLE_SIGNING_CERTIFICATE_P12_BASE64" | base64 --decode -o certificate.p12
+    security import certificate.p12 -P "$APPLE_SIGNING_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+    security default-keychain -d user -s $KEYCHAIN_PATH
+    security find-identity -v -p codesigning
+
 - name: Create signed and notarized distribution (tags only)
-  if: matrix.os == 'macos-latest' || matrix.os == 'macos-15-intel'
+  if: startsWith(github.ref, 'refs/tags/v') && (matrix.os == 'macos-latest' || matrix.os == 'macos-15-intel')
   run: |
     make setup
     ARCH=${{ matrix.arch }} make dist-archive NOTARIZE=true

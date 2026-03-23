@@ -24,6 +24,7 @@ jobs:
 
   build:
     needs: check
+    if: startsWith(github.ref, 'refs/tags/v')
     strategy:
       fail-fast: false
       matrix:
@@ -63,7 +64,7 @@ jobs:
         echo "✅ macos.entitlements found"
 
     - name: Import Code Signing Certificate
-      if: matrix.os == 'macos-latest' || matrix.os == 'macos-15-intel'
+      if: startsWith(github.ref, 'refs/tags/v') && (matrix.os == 'macos-latest' || matrix.os == 'macos-15-intel')
       run: |
         # Create temporary keychain
         KEYCHAIN_PATH="/Users/runner/work/_temp/app-signing.keychain-db"
@@ -76,7 +77,7 @@ jobs:
         security import certificate.p12 -P "$APPLE_SIGNING_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
 
         # Set keychain as default
-        security default-keychain -s user $KEYCHAIN_PATH
+        security default-keychain -d user -s $KEYCHAIN_PATH
 
         # Verify certificate is available
         security find-identity -v -p codesigning
@@ -86,7 +87,7 @@ jobs:
         APPLE_SIGNING_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_SIGNING_CERTIFICATE_PASSWORD }}
 
     - name: Create signed and notarized distribution (tags only)
-      if: matrix.os == 'macos-latest' || matrix.os == 'macos-15-intel'
+      if: startsWith(github.ref, 'refs/tags/v') && (matrix.os == 'macos-latest' || matrix.os == 'macos-15-intel')
       run: |
         make setup
         ARCH=${{ matrix.arch }} make dist-archive NOTARIZE=true
@@ -98,7 +99,7 @@ jobs:
       timeout-minutes: 30
 
     - name: Cleanup Keychain
-      if: always() && (matrix.os == 'macos-latest' || matrix.os == 'macos-15-intel')
+      if: always() && startsWith(github.ref, 'refs/tags/v') && (matrix.os == 'macos-latest' || matrix.os == 'macos-15-intel')
       run: |
         KEYCHAIN_PATH="/Users/runner/work/_temp/app-signing.keychain-db"
         security delete-keychain $KEYCHAIN_PATH || true
