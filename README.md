@@ -14,7 +14,7 @@ WimPyAmp assumes that you have your music collection and playlists reasonably or
 
 The app pretty much works like you might remember from Winamp (if you're old enough to remember). The “eject” button in the main window let’s you choose and load a single track. If you open the Playlist window, you’ll find options to load playlist files or add entire directories to the playlist (useful for albums).
 
-Click the “V” button in the main window clutterbar to toggle between visualizer types (spectrum analyzer, waveform, none).
+Click the “V” button in the main window clutterbar (that's the vertical row of teeny letters on the left) to toggle between visualizer types (spectrum analyzer, waveform, none).
 
 To load a new skin or reload the default skin, either choose the Settings menu, or click “O” in the main window clutter bar.
 
@@ -29,6 +29,9 @@ Want other features? Found a bug? Open an Issue!
 Q: Does WimPyAmp support streaming services like Spotify? Is that planned?
 A: Nope
 
+Q: How about support for Plex or Jellyfin playback?
+A: Not yet, but I plan to add it. If you add it before me, send a PR!
+
 Q: Will it play CDs or SACDs?
 A: You have a CD/DVD drive? Wow. I’ll keep it in mind.
 
@@ -36,7 +39,7 @@ Linux users may need to hold down the Super key (CMD/WIN) while using the mouse 
 
 ### Python
 
-WimPyAmp works with Python3 on Mac, Linux, and Windows. Releases that bundle Python are currently available for Mac on Intel and Apple Silicon. Other platforms will (eventually) follow.
+WimPyAmp works with Python3 on Mac, Linux, and Windows. Releases that bundle Python are currently available for Mac, Windows, and Linux.
 
 ## Developer Notes
 
@@ -70,4 +73,4 @@ WimPyApp is open-source, licensed under the MIT license. I've included licenses 
 
 *WimPyAmp is not associated with Winamp, Webamp, Nullsoft, or Justin Frankel in any way. No source code from Winamp was used or referenced in this project. All rights belong to their respective owners.*
 
-Copyright (c) 2025, Mike Perry
+Copyright (c) 2026, Mike Perry
