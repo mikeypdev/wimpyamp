@@ -39,7 +39,7 @@ Linux users may need to hold down the Super key (CMD/WIN) while using the mouse 
 
 ### Python
 
-WimPyAmp works with Python3 on Mac, Linux, and Windows. Releases that bundle Python are currently available for Mac, Windows, and Linux.
+WimPyAmp works with Python3 on Mac, Linux, and Windows. Releases that bundle Python are available for all platforms.
 
 ## Developer Notes
 
