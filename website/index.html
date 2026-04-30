@@ -3,9 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WimPyAmp - Winamp-Skinned Music Player</title>
+    <title>WimPyAmp — Your Music, Retro Style</title>
     <meta name="description" content="A cross-platform desktop music player with pixel-perfect Winamp skin support. Play your local music collection with a fun retro UI.">
-    <link rel="icon" type="image/png" href="images/favicon.png">
+
+    <meta property="og:title" content="WimPyAmp - Your Music, Retro Style">
+    <meta property="og:description" content="A cross-platform desktop music player with pixel-perfect Winamp skin support. Play your local collection with thousands of classic skins.">
+    <meta property="og:image" content="https://mikeypdev.github.io/wimpyamp/images/hero-screenshot.png">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://mikeypdev.github.io/wimpyamp/">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="WimPyAmp - Your Music, Retro Style">
+    <meta name="twitter:description" content="A cross-platform desktop music player with pixel-perfect Winamp skin support.">
+    <meta name="twitter:image" content="https://mikeypdev.github.io/wimpyamp/images/hero-screenshot.png">
+    <link rel="icon" type="image/png" sizes="180x180" href="images/favicon.png">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -13,12 +24,13 @@
     <header class="header">
         <div class="container header-content">
             <div class="logo">
-                <span class="logo-icon">🎵</span>
+                <img src="images/logo-icon.png" alt="" class="logo-icon-img">
                 <span class="logo-text">WimPyAmp</span>
             </div>
             <nav class="nav">
                 <a href="#features">Features</a>
                 <a href="#gallery">Gallery</a>
+                <a href="#using">Using</a>
                 <a href="#download">Download</a>
             </nav>
         </div>
@@ -54,7 +66,7 @@
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon">📊</div>
-                    <h3>Visualizers</h3>
+                    <h3>Mini-Visualizer</h3>
                     <p>Choose between spectrum analyzer or waveform modes. Watch your music come alive in retro style.</p>
                 </div>
                 <div class="feature-card">
@@ -65,7 +77,12 @@
                 <div class="feature-card">
                     <div class="feature-icon">🎧</div>
                     <h3>Hi-Res Audio</h3>
-                    <p>Play your entire local collection including hi-res lossless files. Quality playback you can trust.</p>
+                    <p>Play your entire local collection including hi-res lossless files. Powered by librosa.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📋</div>
+                    <h3>Playlists</h3>
+                    <p>Build and arrange playlists, then save and load them as standard M3U and PLS files.</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon">💻</div>
@@ -91,30 +108,105 @@
         <div class="container">
             <h2 class="section-title">Screenshots</h2>
             <p class="section-subtitle">Choose from thousands of skins or create your own</p>
-            <div class="gallery-grid">
-                <div class="gallery-item gallery-item-wide">
-                    <img src="images/hero-screenshot.png" alt="Default Winamp 2.91 skin">
+            <div class="gallery-masonry">
+                <div class="gallery-item" onclick="openLightbox(this)">
+                    <img src="images/skin-casio.png" alt="Casio skin">
+                    <div class="gallery-caption">Casio</div>
                 </div>
-                <div class="gallery-item gallery-item-wide">
-                    <img src="images/skin-1.png" alt="Expensive Hi-Fi skin">
+                <div class="gallery-item" onclick="openLightbox(this)">
+                    <img src="images/skin-seven9.png" alt="Seven9 skin">
+                    <div class="gallery-caption">Seven9</div>
                 </div>
-                <div class="gallery-item">
-                    <img src="images/skin-2.png" alt="Mac OS X Winamp skin">
+                <div class="gallery-item" onclick="openLightbox(this)">
+                    <img src="images/skin-fusion-ampdeck.png" alt="Fusion AmpDeck skin">
+                    <div class="gallery-caption">Fusion AmpDeck</div>
                 </div>
-                <div class="gallery-item">
-                    <img src="images/skin-3.png" alt="Nucleo Winamp skin">
+                <div class="gallery-item" onclick="openLightbox(this)">
+                    <img src="images/skin-hitachi.png" alt="Hitachi skin">
+                    <div class="gallery-caption">Hitachi</div>
                 </div>
-                <div class="gallery-item">
-                    <img src="images/skin-4.png" alt="Z-Glass Winamp skin">
+                <div class="gallery-item" onclick="openLightbox(this)">
+                    <img src="images/skin-green-dimension.png" alt="Green Dimension skin">
+                    <div class="gallery-caption">Green Dimension</div>
                 </div>
-                <div class="gallery-item">
-                    <img src="images/skin-5.png" alt="Pioneer Winamp skin">
+                <div class="gallery-item" onclick="openLightbox(this)">
+                    <img src="images/skin-sony.png" alt="Sony skin">
+                    <div class="gallery-caption">Sony</div>
+                </div>
+                <div class="gallery-item" onclick="openLightbox(this)">
+                    <img src="images/skin-macosaqua.png" alt="Mac OS Aqua skin">
+                    <div class="gallery-caption">Mac OS Aqua</div>
+                </div>
+                <div class="gallery-item" onclick="openLightbox(this)">
+                    <img src="images/skin-weezer.png" alt="Weezer skin">
+                    <div class="gallery-caption">Weezer</div>
+                </div>
+                <div class="gallery-item" onclick="openLightbox(this)">
+                    <img src="images/skin-quake3art.png" alt="Quake 3 Art skin">
+                    <div class="gallery-caption">Quake 3 Art</div>
+                </div>
+                <div class="gallery-item" onclick="openLightbox(this)">
+                    <img src="images/skin-tiefighter.png" alt="Tie Fighter skin">
+                    <div class="gallery-caption">Tie Fighter</div>
+                </div>
+                <div class="gallery-item" onclick="openLightbox(this)">
+                    <img src="images/skin-sonyhifi.png" alt="Sony HiFi skin">
+                    <div class="gallery-caption">Sony HiFi</div>
+                </div>
+                <div class="gallery-item" onclick="openLightbox(this)">
+                    <img src="images/skin-mariogb.png" alt="Mario Game Boy skin">
+                    <div class="gallery-caption">Mario Game Boy</div>
+                </div>
+                <div class="gallery-item" onclick="openLightbox(this)">
+                    <img src="images/skin-necro.png" alt="Necro skin">
+                    <div class="gallery-caption">Necro</div>
+                </div>
+                <div class="gallery-item" onclick="openLightbox(this)">
+                    <img src="images/skin-s2.png" alt="S2 skin">
+                    <div class="gallery-caption">S2</div>
+                </div>
+                <div class="gallery-item" onclick="openLightbox(this)">
+                    <img src="images/skin-waantiseptic.png" alt="WA Antiseptic skin">
+                    <div class="gallery-caption">WA Antiseptic</div>
+                </div>
+                <div class="gallery-item" onclick="openLightbox(this)">
+                    <img src="images/skin-xfiles.png" alt="X-Files skin">
+                    <div class="gallery-caption">X-Files</div>
                 </div>
             </div>
             <div class="gallery-cta">
+                <p class="gallery-museum-note">
+                    Browse thousands of skins at the amazing <a href="https://skins.webamp.org/" target="_blank" rel="noopener">Winamp Skin Museum</a> — the definitive collection.
+                </p>
                 <a href="https://skins.webamp.org/" target="_blank" rel="noopener" class="btn btn-secondary">
-                    Browse 1000+ Skins
+                    Browse the Museum
                 </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Using -->
+    <section id="using" class="using">
+        <div class="container">
+            <h2 class="section-title">Using WimPyAmp</h2>
+            <div class="using-layout">
+                <div class="using-screenshot">
+                    <img src="images/hero-screenshot.png" alt="WimPyAmp with default Winamp skin">
+                </div>
+                <div class="using-content">
+                    <p>
+                        The app pretty much works like you might remember from Winamp (if you're old enough to remember). The "eject" button in the main window lets you choose and load a single track. If you open the Playlist window, you'll find options to load playlist files or add entire directories to the playlist (useful for albums).
+                    </p>
+                    <p>
+                        Click the "V" button in the main window clutterbar (that's the vertical row of teeny letters on the left) to toggle between visualizer types (spectrum analyzer, waveform, none).
+                    </p>
+                    <p>
+                        To load a new skin or reload the default skin, either choose the Settings menu, or click "O" in the main window clutter bar.
+                    </p>
+                    <p>
+                        WimPyAmp also has support for Album Art. Click "I" in the main window clutter bar, and an Album Art window will appear. It should show art from either the current track's metadata or an image in the same directory like <code>folder.jpg</code>. If there isn't any art available, you'll see a placeholder image.
+                    </p>
+                </div>
             </div>
         </div>
     </section>
@@ -167,6 +259,15 @@
         </div>
     </section>
 
+    <!-- Lightbox -->
+    <div id="lightbox" class="lightbox" onclick="closeLightbox()">
+        <button class="lightbox-close" aria-label="Close">&times;</button>
+        <button class="lightbox-prev" onclick="event.stopPropagation(); navigateLightbox(-1)" aria-label="Previous">&#8249;</button>
+        <img id="lightbox-img" src="" alt="">
+        <div id="lightbox-caption" class="lightbox-caption"></div>
+        <button class="lightbox-next" onclick="event.stopPropagation(); navigateLightbox(1)" aria-label="Next">&#8250;</button>
+    </div>
+
     <!-- Footer -->
     <footer class="footer">
         <div class="container">
@@ -188,5 +289,43 @@
             </div>
         </div>
     </footer>
+<script>
+let lightboxIndex = 0;
+const galleryItems = document.querySelectorAll('.gallery-item');
+
+function openLightbox(el) {
+    lightboxIndex = Array.from(galleryItems).indexOf(el);
+    showLightboxImage();
+    document.getElementById('lightbox').classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeLightbox() {
+    document.getElementById('lightbox').classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+function navigateLightbox(dir) {
+    lightboxIndex = (lightboxIndex + dir + galleryItems.length) % galleryItems.length;
+    showLightboxImage();
+}
+
+function showLightboxImage() {
+    const item = galleryItems[lightboxIndex];
+    const img = item.querySelector('img');
+    const caption = item.querySelector('.gallery-caption');
+    document.getElementById('lightbox-img').src = img.src;
+    document.getElementById('lightbox-img').alt = img.alt;
+    document.getElementById('lightbox-caption').textContent = caption ? caption.textContent : '';
+}
+
+document.addEventListener('keydown', function(e) {
+    const lb = document.getElementById('lightbox');
+    if (!lb.classList.contains('active')) return;
+    if (e.key === 'Escape') closeLightbox();
+    if (e.key === 'ArrowLeft') navigateLightbox(-1);
+    if (e.key === 'ArrowRight') navigateLightbox(1);
+});
+</script>
 </body>
 </html>
