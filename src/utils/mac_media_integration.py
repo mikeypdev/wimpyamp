@@ -8,6 +8,7 @@ system-level media controls in Control Center and menu bar.
 
 import platform
 from typing import TYPE_CHECKING, Optional, Any
+from .logger import get_logger
 
 # Conditional import for type checking purposes only
 if TYPE_CHECKING:
@@ -21,7 +22,7 @@ if TYPE_CHECKING:
 
 def is_macos():
     current_system = platform.system()
-    print(f"Current platform: {current_system}")
+    logger.info(f"Current platform: {current_system}")
     return current_system == "Darwin"
 
 
@@ -50,15 +51,15 @@ def check_pyobjc_availability():
 
         for attr in attrs_needed:
             if not hasattr(MediaPlayer, attr):
-                print(f"Missing MediaPlayer attribute: {attr}")
+                logger.info(f"Missing MediaPlayer attribute: {attr}")
                 return False
 
         return True
     except ImportError as e:
-        print(f"ImportError during PyObjC availability check: {e}")
+        logger.error(f"ImportError during PyObjC availability check: {e}")
         return False
     except Exception as e:
-        print(f"Other error during PyObjC availability check: {e}")
+        logger.error(f"Other error during PyObjC availability check: {e}")
         return False
 
 
@@ -103,7 +104,7 @@ class MacMediaIntegration:
         # Set up the remote command handlers
         self.setup_remote_commands()
 
-        print("MacMediaIntegration initialized successfully")
+        logger.info("MacMediaIntegration initialized successfully")
 
     def update_now_playing_info(self):
         """
@@ -188,7 +189,7 @@ class MacMediaIntegration:
                 artwork_image = NSImage.alloc().initWithData_(ns_data)
 
                 if artwork_image:
-                    print(f"Album art processed, size: {len(album_art)} bytes")
+                    logger.info(f"Album art processed, size: {len(album_art)} bytes")
 
                     # Create MPMediaItemArtwork with the NSImage
                     # The handler function must accept a CGSize parameter as required by the Objective-C API
@@ -204,22 +205,22 @@ class MacMediaIntegration:
 
                     # Add the artwork to the now playing info
                     now_playing_info[MPMediaItemPropertyArtwork] = media_artwork
-                    print("Album art successfully added to now playing info")
+                    logger.info("Album art successfully added to now playing info")
                 else:
-                    print("Failed to create NSImage from album art data")
+                    logger.error("Failed to create NSImage from album art data")
             except Exception as e:
-                print(f"Error processing album art: {e}")
+                logger.error(f"Error processing album art: {e}")
                 import traceback
 
                 traceback.print_exc()
         else:
-            print("No album art available for this track")
+            logger.info("No album art available for this track")
 
         # Update the system now playing info with metadata (this now includes artwork!)
-        print(f"Now Playing Info Keys: {list(now_playing_info.keys())}")
+        logger.info(f"Now Playing Info Keys: {list(now_playing_info.keys())}")
         self.now_playing_info_center.setNowPlayingInfo_(now_playing_info)
 
-        print("Now Playing info updated with all track info including album art")
+        logger.info("Now Playing info updated with all track info including album art")
 
     def update_playback_state(self):
         """
@@ -286,7 +287,7 @@ class MacMediaIntegration:
                 self.main_window.toggle_play_pause()
                 return MPRemoteCommandHandlerStatusSuccess
             except Exception as e:
-                print(f"Error handling play command: {e}")
+                logger.error(f"Error handling play command: {e}")
                 return MPRemoteCommandHandlerStatusCommandFailed
 
         # Set up pause command handler
@@ -301,7 +302,7 @@ class MacMediaIntegration:
                     self.main_window.update()
                 return MPRemoteCommandHandlerStatusSuccess
             except Exception as e:
-                print(f"Error handling pause command: {e}")
+                logger.error(f"Error handling pause command: {e}")
                 return MPRemoteCommandHandlerStatusCommandFailed
 
         # Set up play/pause toggle handler
@@ -310,7 +311,7 @@ class MacMediaIntegration:
                 self.main_window.toggle_play_pause()
                 return MPRemoteCommandHandlerStatusSuccess
             except Exception as e:
-                print(f"Error handling play/pause command: {e}")
+                logger.error(f"Error handling play/pause command: {e}")
                 return MPRemoteCommandHandlerStatusCommandFailed
 
         # Set up next track command handler
@@ -319,7 +320,7 @@ class MacMediaIntegration:
                 self.main_window.play_next_track()
                 return MPRemoteCommandHandlerStatusSuccess
             except Exception as e:
-                print(f"Error handling next command: {e}")
+                logger.error(f"Error handling next command: {e}")
                 return MPRemoteCommandHandlerStatusCommandFailed
 
         # Set up previous track command handler
@@ -328,7 +329,7 @@ class MacMediaIntegration:
                 self.main_window.play_previous_track()
                 return MPRemoteCommandHandlerStatusSuccess
             except Exception as e:
-                print(f"Error handling previous command: {e}")
+                logger.error(f"Error handling previous command: {e}")
                 return MPRemoteCommandHandlerStatusCommandFailed
 
         # Set up change playback position command handler
@@ -342,7 +343,7 @@ class MacMediaIntegration:
                     self.main_window.audio_engine.seek(position_fraction)
                     return MPRemoteCommandHandlerStatusSuccess
             except Exception as e:
-                print(f"Error handling seek command: {e}")
+                logger.error(f"Error handling seek command: {e}")
                 return MPRemoteCommandHandlerStatusCommandFailed
 
         # Register the command handlers
@@ -380,7 +381,7 @@ class MacMediaIntegration:
         self.now_playing_info_center.setNowPlayingInfo_(None)
         self.now_playing_info_center.setPlaybackState_(MPNowPlayingPlaybackStateStopped)
 
-        print("MacMediaIntegration cleaned up successfully")
+        logger.info("MacMediaIntegration cleaned up successfully")
 
 
 def create_mac_media_integration(main_window) -> Optional["MacMediaIntegration"]:
@@ -394,20 +395,23 @@ def create_mac_media_integration(main_window) -> Optional["MacMediaIntegration"]
         MacMediaIntegration instance if on macOS and PyObjC is available, None otherwise
     """
     if not is_macos():
-        print("Not running on macOS, skipping media integration")
+        logger.info("Not running on macOS, skipping media integration")
         return None
 
     if not check_pyobjc_availability():
-        print("PyObjC is not available. macOS media integration will not be loaded.")
+        logger.info("PyObjC is not available. macOS media integration will not be loaded.")
         return None
 
     try:
         integration = MacMediaIntegration(main_window)
-        print("MacMediaIntegration successfully initialized and loaded")
+        logger.info("MacMediaIntegration successfully initialized and loaded")
         return integration
     except Exception as e:
-        print(f"Failed to initialize MacMediaIntegration: {type(e).__name__}: {e}")
+        logger.error(f"Failed to initialize MacMediaIntegration: {type(e).__name__}: {e}")
         import traceback
 
         traceback.print_exc()
         return None
+
+
+logger = get_logger(__name__)

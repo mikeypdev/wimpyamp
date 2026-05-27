@@ -3,6 +3,7 @@
 import os
 from PySide6.QtCore import QRect
 from ..utils.color import MAGENTA_TRANSPARENCY_RGB
+from ..utils.logger import get_logger
 
 
 class ScrollbarManager:
@@ -76,7 +77,7 @@ class ScrollbarManager:
             self.playlist_spec["spriteSheet"]["file"]
         )
         if not pledit_bmp_path or not os.path.exists(pledit_bmp_path):
-            print(f"WARNING: {self.playlist_spec['spriteSheet']['file']} not found.")
+            logger.warning(f"{self.playlist_spec['spriteSheet']['file']} not found.")
             return None
 
         for sprite_data in self.playlist_spec["spriteSheet"]["sprites"]:
@@ -89,7 +90,7 @@ class ScrollbarManager:
                     sprite_data["height"],
                     transparency_color=MAGENTA_TRANSPARENCY_RGB,
                 )
-        print(f"WARNING: Sprite ID '{sprite_id}' not found in spec.")
+        logger.warning(f"Sprite ID '{sprite_id}' not found in spec.")
         return None
 
     def handle_up_button_click(self):
@@ -205,3 +206,6 @@ class ScrollbarManager:
     def update_sprite_manager(self, new_sprite_manager):
         """Update the sprite manager with a new instance."""
         self.sprite_manager = new_sprite_manager
+
+
+logger = get_logger(__name__)

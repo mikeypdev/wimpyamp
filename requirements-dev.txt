@@ -1,0 +1,5 @@
+black
+ruff
+pytest
+mypy
+bump2version

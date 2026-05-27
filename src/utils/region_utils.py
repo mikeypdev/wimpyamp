@@ -1,5 +1,5 @@
 """
-Utility functions for converting region data to PyQt5 masks.
+Utility functions for converting region data to PySide6 masks.
 """
 
 from PySide6.QtGui import QPolygon, QRegion

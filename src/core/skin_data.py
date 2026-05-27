@@ -1,4 +1,5 @@
 from __future__ import annotations
+import os
 from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Tuple, Any
 
@@ -29,8 +30,6 @@ class SkinData:
         actual_filename = self.file_mapping.get(filename.lower())
 
         if actual_filename:
-            import os
-
             return os.path.join(self.extracted_skin_dir, actual_filename)
 
         return None

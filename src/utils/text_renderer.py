@@ -1,5 +1,6 @@
 from PySide6.QtGui import QImage, QPixmap, QColor
 import os
+from .logger import get_logger
 
 
 class TextRenderer:
@@ -123,7 +124,7 @@ class TextRenderer:
         Loads TEXT.BMP and converts it to an RGBA PIL Image.
         """
         if not self.text_bmp_path or not os.path.exists(self.text_bmp_path):
-            print(f"WARNING: TEXT.BMP not found at {self.text_bmp_path}")
+            logger.warning(f"TEXT.BMP not found at {self.text_bmp_path}")
             return
 
         try:
@@ -131,7 +132,7 @@ class TextRenderer:
             if self.text_bmp_image.isNull():
                 raise Exception("QImage failed to load TEXT.BMP")
         except Exception as e:
-            print(f"ERROR: Failed to load TEXT.BMP with QImage: {e}")
+            logger.error(f"Failed to load TEXT.BMP with QImage: {e}")
             self.text_bmp_image = None
 
     def get_glyph_pixmap(self, char_code, band=0):
@@ -149,9 +150,7 @@ class TextRenderer:
         # Get glyph coordinates for the specific character and band
         char_coords = self.char_to_coords.get(char_code)
         if char_coords is None:
-            print(
-                f"WARNING: Character '{char_code}' not found in char_to_coords mapping. Returning empty pixmap."
-            )
+            logger.warning(f"Character '{char_code}' not found in char_to_coords mapping. Returning empty pixmap.")
             return QPixmap()
 
         # Get coordinates for the requested band, fallback to band 0 if band not available
@@ -180,9 +179,7 @@ class TextRenderer:
             sheet_x + glyph_width > self.text_bmp_image.width()
             or sheet_y + glyph_height > self.text_bmp_image.height()
         ):
-            print(
-                f"WARNING: Glyph coordinates for char_code '{char_code}' (band {band}) out of bounds. Returning empty pixmap."
-            )
+            logger.warning(f"Glyph coordinates for char_code '{char_code}' (band {band}) out of bounds. Returning empty pixmap.")
             return QPixmap()
 
         # Crop the QImage directly
@@ -193,9 +190,7 @@ class TextRenderer:
         cropped_q_image = cropped_q_image.convertToFormat(QImage.Format_RGBA8888)
 
         if cropped_q_image.isNull():
-            print(
-                f"ERROR: QImage failed to convert format for char_code {char_code} (band {band})"
-            )
+            logger.error(f"QImage failed to convert format for char_code {char_code} (band {band})")
             return QPixmap()
 
         # Apply transparency using the top-left pixel key color
@@ -256,3 +251,6 @@ class TextRenderer:
                 painter.drawPixmap(current_x, start_y, glyph_pixmap)
                 # Horizontal advance per char is fixed at 5 px (glyph_width + cell_spacing)
                 current_x += 5
+
+
+logger = get_logger(__name__)

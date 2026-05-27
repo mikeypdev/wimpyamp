@@ -5,6 +5,7 @@ import os
 
 from ..utils.color import MAGENTA_TRANSPARENCY_RGB
 from ..utils.region_utils import apply_region_mask_to_widget
+from ..utils.metadata import load_metadata_for_file
 from ..core.user_preferences import get_preferences
 from .playlist_constants import (
     DEFAULT_FONT_NAME,
@@ -19,6 +20,7 @@ from .playlist_config import PlaylistConfig
 from .playlist_scrollbar import ScrollbarManager
 from .playlist_menu import MenuManager
 from .playlist_buttonbar import ButtonBarManager
+from ..utils.logger import get_logger
 
 
 class PlaylistWindow(QWidget):
@@ -282,7 +284,6 @@ class PlaylistWindow(QWidget):
 
     def _get_track_metadata(self, filepath):
         """Get metadata for a track using the main window's audio engine or mutagen."""
-        # Try to get metadata from main window's audio engine if it's the currently loaded track
         if (
             self.main_window
             and hasattr(self.main_window, "audio_engine")
@@ -292,153 +293,9 @@ class PlaylistWindow(QWidget):
             try:
                 return self.main_window.audio_engine.get_metadata()
             except Exception:
-                # If getting metadata from audio engine fails, fall through to mutagen approach
                 pass
 
-        # Otherwise, try to load metadata directly using mutagen
-        try:
-            from mutagen import File as MutagenFile
-
-            audio_file = MutagenFile(filepath)
-            if audio_file is not None:
-                metadata = {}
-
-                # Helper function to safely extract metadata
-                def safe_extract_metadata(audio_file, keys):
-                    result = "Unknown"
-                    for key in keys:
-                        try:
-                            if key in audio_file:
-                                tag_value = audio_file[key]
-                                if isinstance(tag_value, list) and len(tag_value) > 0:
-                                    try:
-                                        raw_value = tag_value[0]
-                                        # Only convert to string if it's not None
-                                        if raw_value is not None:
-                                            result = str(raw_value).strip()
-                                        else:
-                                            result = "Unknown"
-                                    except (
-                                        UnicodeDecodeError,
-                                        TypeError,
-                                        AttributeError,
-                                    ):
-                                        # Handle cases where value can't be converted to string
-                                        result = "Unknown"
-                                elif (
-                                    isinstance(tag_value, list) and len(tag_value) == 0
-                                ):
-                                    continue
-                                else:
-                                    try:
-                                        # Handle single values
-                                        if tag_value is not None:
-                                            result = str(tag_value).strip()
-                                        else:
-                                            result = "Unknown"
-                                    except (
-                                        UnicodeDecodeError,
-                                        TypeError,
-                                        AttributeError,
-                                    ):
-                                        # Handle cases where value can't be converted to string
-                                        result = "Unknown"
-                                break
-                        except Exception:
-                            # If any key access fails, continue to next key
-                            continue
-                    return result if result else "Unknown"
-
-                # Title
-                title_keys = ["TIT2", "title", "\xa9nam", "TITLE", "©nam"]
-                metadata["title"] = safe_extract_metadata(audio_file, title_keys)
-
-                # Artist
-                artist_keys = ["TPE1", "artist", "\xa9ART", "ARTIST", "©ART"]
-                metadata["artist"] = safe_extract_metadata(audio_file, artist_keys)
-
-                # Album
-                album_keys = ["TALB", "album", "\xa9alb", "ALBUM", "©alb"]
-                metadata["album"] = safe_extract_metadata(audio_file, album_keys)
-
-                # Album artist (if available)
-                album_artist_keys = ["TPE2", "albumartist", "aART", "©aAR"]
-                metadata["album_artist"] = safe_extract_metadata(
-                    audio_file, album_artist_keys
-                )
-
-                # Track number - handle different formats
-                track_number_str = "Unknown"
-                try:
-                    if "trkn" in audio_file:  # MP4/M4A style
-                        # Value is a list of tuples, e.g., [(2, 12)]
-                        track_info = audio_file["trkn"]
-                        if (
-                            track_info
-                            and len(track_info) > 0
-                            and len(track_info[0]) > 0
-                        ):
-                            track_number_str = str(track_info[0][0])
-                    elif "TRCK" in audio_file:  # MP3 style
-                        # Value is a TRCK object, str(obj) is '2/12' or '2'
-                        track_number_str = str(audio_file["TRCK"])
-                    elif "tracknumber" in audio_file:  # FLAC/Vorbis style
-                        # Value is a list of strings, e.g., ['2']
-                        track_number_str = str(audio_file["tracknumber"][0])
-                except Exception:
-                    track_number_str = "Unknown"
-
-                if track_number_str and track_number_str != "Unknown":
-                    # The value can be '3/12' or just '3'. We only want the '3'.
-                    parsed_track = track_number_str.split("/")[0].strip()
-                    metadata["tracknumber"] = parsed_track
-                else:
-                    metadata["tracknumber"] = "Unknown"
-
-                # Duration from audio data
-                try:
-                    audio_file_for_duration = MutagenFile(filepath)
-                    if hasattr(audio_file_for_duration, "info") and hasattr(
-                        audio_file_for_duration.info, "length"
-                    ):
-                        duration = audio_file_for_duration.info.length
-                    else:
-                        # Fallback: load with librosa
-                        import librosa
-
-                        try:
-                            audio_data, sample_rate = librosa.load(
-                                filepath, sr=None, mono=False
-                            )
-                            duration = librosa.get_duration(
-                                y=audio_data, sr=sample_rate
-                            )
-                        except Exception:
-                            duration = 0.0
-                except Exception:
-                    duration = 0.0
-                metadata["duration"] = duration
-
-                return metadata
-            else:
-                return {
-                    "title": "Unknown",
-                    "artist": "Unknown",
-                    "album": "Unknown",
-                    "album_artist": "Unknown",
-                    "tracknumber": "Unknown",
-                    "duration": 0.0,
-                }
-        except Exception:
-            # If metadata loading fails completely, return defaults
-            return {
-                "title": "Unknown",
-                "artist": "Unknown",
-                "album": "Unknown",
-                "album_artist": "Unknown",
-                "tracknumber": "Unknown",
-                "duration": 0.0,
-            }
+        return load_metadata_for_file(filepath)
 
     def get_playlist_filepaths(self):
         """Get the list of file paths for the playlist."""
@@ -467,54 +324,37 @@ class PlaylistWindow(QWidget):
         """Get the rectangle for a scrollbar element."""
         return self.scrollbar_manager.get_element_rect(element_id)
 
-    def _load_pledit_colors(self):
+    def _load_pledit_settings(self):
+        """Load font and color settings from pledit.txt in a single pass."""
         pledit_txt_path = self.skin_data.get_path("pledit.txt")
         if not pledit_txt_path or not os.path.exists(pledit_txt_path):
-            print("WARNING: pledit.txt not found. Using default colors.")
+            logger.warning("pledit.txt not found. Using default font and color settings.")
             return
 
         try:
             with open(pledit_txt_path, "r") as f:
                 for line in f:
                     line = line.strip()
-                    if line.startswith("NormalBG="):
-                        hex_color = line.split("=")[1]
-                        self.normal_bg_color = QColor(hex_color)
-                    elif line.startswith("SelectedBG="):
-                        hex_color = line.split("=")[1]
-                        self.selected_bg_color = QColor(hex_color)
-                    elif line.startswith("Normal="):
-                        hex_color = line.split("=")[1]
-                        self.playlist_normal_text_color = QColor(hex_color)
-                    elif line.startswith("Current="):
-                        hex_color = line.split("=")[1]
-                        self.playlist_current_text_color = QColor(hex_color)
-        except Exception as e:
-            print(f"Error loading pledit.txt colors: {e}. Using default colors.")
-
-    def _load_playlist_font_settings(self):
-        pledit_txt_path = self.skin_data.get_path("pledit.txt")
-
-        # Check if pledit.txt exists
-        if not pledit_txt_path or not os.path.exists(pledit_txt_path):
-            print("WARNING: pledit.txt not found. Using default font settings.")
-            return
-
-        try:
-            with open(pledit_txt_path, "r") as f:
-                lines = f.readlines()
-                for line in lines:
-                    line = line.strip()
                     if line.startswith("Font="):
                         self.playlist_font_name = line.split("=")[1]
+                    elif line.startswith("NormalBG="):
+                        self.normal_bg_color = QColor(line.split("=")[1])
+                    elif line.startswith("SelectedBG="):
+                        self.selected_bg_color = QColor(line.split("=")[1])
                     elif line.startswith("Normal="):
                         self.playlist_normal_text_color = QColor(line.split("=")[1])
                     elif line.startswith("Current="):
                         self.playlist_current_text_color = QColor(line.split("=")[1])
         except Exception as e:
-            print(
-                f"Error parsing pledit.txt content for font settings: {e}. Using default font settings."
-            )
+            logger.error(f"Error parsing pledit.txt: {e}. Using default settings.")
+
+    def _load_pledit_colors(self):
+        """Load color settings from pledit.txt. Delegates to _load_pledit_settings."""
+        self._load_pledit_settings()
+
+    def _load_playlist_font_settings(self):
+        """Load font settings from pledit.txt. Delegates to _load_pledit_settings."""
+        self._load_pledit_settings()
 
     def _get_bottom_bar_y(self):
         bottom_bar_spec = self.playlist_spec["layout"]["regions"]["bottom_bar"]
@@ -568,7 +408,7 @@ class PlaylistWindow(QWidget):
             self.playlist_spec["spriteSheet"]["file"]
         )
         if not pledit_bmp_path or not os.path.exists(pledit_bmp_path):
-            print(f"WARNING: {self.playlist_spec['spriteSheet']['file']} not found.")
+            logger.warning(f"{self.playlist_spec['spriteSheet']['file']} not found.")
             return None
 
         for sprite_data in self.playlist_spec["spriteSheet"]["sprites"]:
@@ -581,7 +421,7 @@ class PlaylistWindow(QWidget):
                     sprite_data["height"],
                     transparency_color=MAGENTA_TRANSPARENCY_RGB,
                 )
-        print(f"WARNING: Sprite ID '{sprite_id}' not found in spec.")
+        logger.warning(f"Sprite ID '{sprite_id}' not found in spec.")
         return None
 
     def _close_all_sub_menus(self):
@@ -881,9 +721,7 @@ class PlaylistWindow(QWidget):
                                 if self.width() < min_width:
                                     continue  # Skip this component if condition is not met
                             except ValueError:
-                                print(
-                                    f"WARNING: Could not parse width from condition: {condition}"
-                                )
+                                logger.warning(f"Could not parse width from condition: {condition}")
                                 continue
 
                 sprite_pixmap = self._get_sprite_pixmap(component["sprite"])
@@ -2751,7 +2589,7 @@ class PlaylistWindow(QWidget):
                     "length": 0.0,
                 }
         except Exception as e:
-            print(f"Error getting technical info: {e}")
+            logger.error(f"Error getting technical info: {e}")
             technical_info = {
                 "format": "Unknown",
                 "bitrate": 0,
@@ -2895,7 +2733,7 @@ class PlaylistWindow(QWidget):
                     layout.addWidget(comments_label)
 
         except Exception as e:
-            print(f"Error getting additional metadata: {e}")
+            logger.error(f"Error getting additional metadata: {e}")
 
         layout.addWidget(QLabel(""))
 
@@ -3447,7 +3285,7 @@ class PlaylistWindow(QWidget):
     def _handle_transport_control_action(self, control_name):
         """Handle the action for a transport control button."""
         if not self.main_window:
-            print("ERROR: No main window reference available for transport controls")
+            logger.error("No main window reference available for transport controls")
             return
 
         if control_name == "previous":
@@ -4175,3 +4013,6 @@ class PlaylistWindow(QWidget):
                 self.main_window.preferences.set_playlist_window_position(
                     self.x(), self.y()
                 )
+
+
+logger = get_logger(__name__)

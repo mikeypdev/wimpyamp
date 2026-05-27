@@ -24,6 +24,7 @@ else
 endif
 
 REQUIREMENTS := requirements.txt
+REQUIREMENTS_DEV := requirements-dev.txt
 VERSION := $(shell cat VERSION)
 
 # Load Apple credentials from .env if it exists
@@ -51,6 +52,7 @@ all: setup run
 setup:
 	$(PYTHON) -m venv $(VENV_DIR)
 	$(VENV_PIP) install -r $(REQUIREMENTS)
+	$(VENV_PIP) install -r $(REQUIREMENTS_DEV)
 
 # Run the application
 .PHONY: run
@@ -75,27 +77,22 @@ start:
 # Code quality checks
 .PHONY: lint
 lint:
-	$(VENV_PIP) install ruff
 	$(VENV_PYTHON) -m ruff check .
 
 .PHONY: format-check
 format-check:
-	$(VENV_PIP) install black
 	$(VENV_PYTHON) -m black --check .
 
 .PHONY: format
 format:
-	$(VENV_PIP) install black
 	$(VENV_PYTHON) -m black .
 
 .PHONY: type-check
 type-check:
-	$(VENV_PIP) install mypy
 	$(VENV_PYTHON) -m mypy src/
 
 .PHONY: test
 test:
-	$(VENV_PIP) install pytest
 	$(VENV_PYTHON) -m pytest tests/ -v
 
 .PHONY: check

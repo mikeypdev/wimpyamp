@@ -12,6 +12,7 @@ import json
 import tempfile
 import sys
 from typing import Dict, Any, Optional
+from ..utils.logger import get_logger
 
 # Import appdirs for cross-platform user data directory
 try:
@@ -20,7 +21,7 @@ try:
     APP_DIRS_AVAILABLE = True
 except ImportError:
     APP_DIRS_AVAILABLE = False
-    print("WARNING: appdirs module not available. Using fallback user data directory.")
+    logger.warning("appdirs module not available. Using fallback user data directory.")
 
 
 class UserPreferences:
@@ -67,7 +68,7 @@ class UserPreferences:
                     return True
 
         except (json.JSONDecodeError, IOError, OSError) as e:
-            print(f"ERROR: Failed to load preferences: {e}")
+            logger.error(f"Failed to load preferences: {e}")
 
         # If loading fails, use defaults
         self._initialize_defaults()
@@ -91,7 +92,7 @@ class UserPreferences:
 
         # For now, we only support version 1.0
         if current_version != "1.0":
-            print(f"WARNING: Unsupported preferences version: {current_version}")
+            logger.warning(f"Unsupported preferences version: {current_version}")
             return False
 
         return True
@@ -119,7 +120,7 @@ class UserPreferences:
                     os.remove(self.prefs_file_path)
                 return True
             except OSError as e:
-                print(f"ERROR: Failed to remove preferences file: {e}")
+                logger.error(f"Failed to remove preferences file: {e}")
                 return False
 
         # We have custom preferences, save them
@@ -168,7 +169,7 @@ class UserPreferences:
                 raise e
 
         except (IOError, OSError) as e:
-            print(f"ERROR: Failed to save preferences: {e}")
+            logger.error(f"Failed to save preferences: {e}")
             return False
 
     # Skin-related methods
@@ -614,3 +615,6 @@ def get_preferences() -> UserPreferences:
     if _preferences_instance is None:
         _preferences_instance = UserPreferences()
     return _preferences_instance
+
+
+logger = get_logger(__name__)

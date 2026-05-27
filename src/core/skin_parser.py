@@ -6,6 +6,8 @@ import sys  # Moved from _load_spec_files method
 from appdirs import user_data_dir  # type: ignore
 from .region_parser import parse_region_file
 from .skin_data import SkinData
+from ..utils.file_utils import extract_zip_safely
+from ..utils.logger import get_logger
 
 
 class SkinParser:
@@ -25,14 +27,14 @@ class SkinParser:
         if main_bmp_full_path and os.path.exists(main_bmp_full_path):
             self.skin_data.main_bmp_path = main_bmp_full_path
         else:
-            print(f"WARNING: main.bmp not found in {self.skin_data.extracted_skin_dir}")
+            logger.warning(f"main.bmp not found in {self.skin_data.extracted_skin_dir}")
 
         return self.skin_data
 
     def _extract_skin_files(self) -> bool:
         # Check if the file or directory exists before attempting to process it
         if not os.path.exists(self.skin_path):
-            print(f"ERROR: Skin file/directory does not exist: {self.skin_path}")
+            logger.error(f"Skin file/directory does not exist: {self.skin_path}")
             return False
 
         if os.path.isdir(self.skin_path):
@@ -56,7 +58,7 @@ class SkinParser:
 
             try:
                 with zipfile.ZipFile(self.skin_path, "r") as zf:
-                    zf.extractall(temp_extract_dir)
+                    extract_zip_safely(zf, temp_extract_dir)
 
                 extracted_items = os.listdir(temp_extract_dir)
                 if len(extracted_items) == 1:
@@ -82,19 +84,18 @@ class SkinParser:
                     return True
                 else:
                     self.skin_data.extracted_skin_dir = None
-                    print(
-                        f"ERROR: {self.skin_path} does not contain valid Winamp skin data."
-                    )
+                    logger.error(f"{self.skin_path} does not contain valid Winamp skin data.")
                     # Clean up extracted files
                     shutil.rmtree(temp_extract_dir)
                     return False
             except zipfile.BadZipFile:
-                print(f"ERROR: {self.skin_path} is not a valid ZIP file.")
+                logger.error(f"{self.skin_path} is not a valid ZIP file.")
+                return False
+            except ValueError as e:
+                logger.error(f"{self.skin_path} contains unsafe paths: {e}")
                 return False
         else:
-            print(
-                f"ERROR: Unknown skin path type: {self.skin_path}. Must be a directory, .wsz file, or .zip file."
-            )
+            logger.error(f"Unknown skin path type: {self.skin_path}. Must be a directory, .wsz file, or .zip file.")
             return False
 
     def _validate_skin_directory(self, skin_dir: str) -> bool:
@@ -114,9 +115,7 @@ class SkinParser:
         # Check for required files (case-insensitively)
         for required_file in required_files:
             if required_file.lower() not in self.skin_data.file_mapping:
-                print(
-                    f"INFO: Required skin file '{required_file}' not found in {skin_dir}"
-                )
+                logger.info(f"Required skin file '{required_file}' not found in {skin_dir}")
                 return False
 
         # Additional check: verify that main.bmp is actually an image file
@@ -134,7 +133,7 @@ class SkinParser:
             with Image.open(main_bmp_path) as img:
                 img.load()  # Read the file to be sure
         except Exception as e:
-            print(f"INFO: main.bmp is not a valid image file: {e}")
+            logger.info(f"main.bmp is not a valid image file: {e}")
             return False
 
         # If main.bmp exists and is a valid image file, we consider it a valid skin
@@ -169,16 +168,14 @@ class SkinParser:
                 with open(path, "r") as f:
                     setattr(self.skin_data, key, json.load(f))
             else:
-                print(f"WARNING: {filename} not found at {path}")
+                logger.warning(f"{filename} not found at {path}")
 
     def _load_viscolor_data(self):
         viscolor_path = self.skin_data.get_path("viscolor.txt")
         if viscolor_path and os.path.exists(viscolor_path):
             self.skin_data.viscolor_data = self._load_viscolor_file(viscolor_path)
         else:
-            print(
-                f"WARNING: viscolor.txt not found in {self.skin_data.extracted_skin_dir}, using defaults"
-            )
+            logger.warning(f"viscolor.txt not found in {self.skin_data.extracted_skin_dir}, using defaults")
             self.skin_data.viscolor_data = self._get_default_viscolor_data()
 
     def _load_region_data(self):
@@ -189,28 +186,26 @@ class SkinParser:
                     region_content = f.read()
                 self.skin_data.region_data = parse_region_file(region_content)
             except Exception as e:
-                print(f"WARNING: Could not parse region.txt: {e}")
+                logger.warning(f"Could not parse region.txt: {e}")
                 self.skin_data.region_data = None
         else:
-            print(
-                f"INFO: region.txt not found in {self.skin_data.extracted_skin_dir}, skipping region parsing"
-            )
+            logger.info(f"region.txt not found in {self.skin_data.extracted_skin_dir}, skipping region parsing")
             self.skin_data.region_data = None
 
     def get_sprite(self, sheet_name, sprite_id):
         if not self.skin_data.spec_json:
-            print("ERROR: Skin specification not loaded.")
+            logger.error("Skin specification not loaded.")
             return None
 
         spec = self.skin_data.spec_json
 
         if sheet_name not in spec["sheets"]:
-            print(f"ERROR: Sheet '{sheet_name}' not found in skin specification.")
+            logger.error(f"Sheet '{sheet_name}' not found in skin specification.")
             return None
 
         sheet = spec["sheets"][sheet_name]
         if sprite_id not in sheet["sprites"]:
-            print(f"ERROR: Sprite '{sprite_id}' not found in sheet '{sheet_name}'.")
+            logger.error(f"Sprite '{sprite_id}' not found in sheet '{sheet_name}'.")
             return None
 
         sprite_info = sheet["sprites"][sprite_id]
@@ -248,9 +243,7 @@ class SkinParser:
                         (max(0, min(255, r)), max(0, min(255, g)), max(0, min(255, b)))
                     )
                 except ValueError:
-                    print(
-                        f"WARNING: Invalid color format in viscolor.txt line {i+1}: {line}"
-                    )
+                    logger.warning(f"Invalid color format in viscolor.txt line {i+1}: {line}")
                     colors.append((0, 0, 0))
 
             while len(colors) < 24:
@@ -258,7 +251,7 @@ class SkinParser:
 
             return colors
         except Exception as e:
-            print(f"ERROR: Could not load viscolor.txt: {e}")
+            logger.error(f"Could not load viscolor.txt: {e}")
             return self._get_default_viscolor_data()
 
     def _get_default_viscolor_data(self):
@@ -288,3 +281,6 @@ class SkinParser:
 
 
 # Ensure we have exactly 24 colors
+
+
+logger = get_logger(__name__)

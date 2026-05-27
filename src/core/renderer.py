@@ -7,6 +7,7 @@ from ..utils.scrolling_text_renderer import ScrollingTextRenderer
 from ..utils.sprite_validator import validate_sprite_in_bmp
 import os
 import math
+from ..utils.logger import get_logger
 
 
 class Renderer:
@@ -73,7 +74,7 @@ class Renderer:
         spec = self.skin_data.spec_json
         sheet_path = self.skin_data.get_path(sheet_name)
         if not sheet_path or not os.path.exists(sheet_path):
-            print(f"WARNING: {sheet_name} not found.")
+            logger.warning(f"{sheet_name} not found.")
             return
 
         try:
@@ -105,9 +106,7 @@ class Renderer:
             if not validate_sprite_in_bmp(
                 sheet_path, sprite_x, sprite_y, sprite_w, sprite_h
             ):
-                print(
-                    f"WARNING: Sprite '{sprite_id}' at coordinates ({sprite_x}, {sprite_y}, {sprite_w}x{sprite_h}) is out of bounds in {sheet_path}. Skipping."
-                )
+                logger.warning(f"Sprite '{sprite_id}' at coordinates ({sprite_x}, {sprite_y}, {sprite_w}x{sprite_h}) is out of bounds in {sheet_path}. Skipping.")
                 self.sprite_manager.invalid_sprite_cache.add(cache_key)
                 return
 
@@ -124,11 +123,9 @@ class Renderer:
             if not pixmap.isNull():
                 painter.drawPixmap(dest_area["x"], dest_area["y"], pixmap)
         except KeyError as e:
-            print(
-                f"ERROR: Sprite '{sprite_id}' not found in sheet '{sheet_name}' spec: {e}"
-            )
+            logger.error(f"Sprite '{sprite_id}' not found in sheet '{sheet_name}' spec: {e}")
         except Exception as e:
-            print(f"ERROR drawing sprite {sprite_id} from {sheet_name}: {e}")
+            logger.error(f"ERROR drawing sprite {sprite_id} from {sheet_name}: {e}")
 
     def render(self, painter: QPainter, ui_state: "UIState"):
         if not self.skin_data or not self.skin_data.spec_json or not self.text_renderer:
@@ -178,7 +175,7 @@ class Renderer:
             )
             painter.drawPixmap(0, 0, background_pixmap)
         else:
-            print(f"WARNING: main.bmp not found in {self.skin_data.extracted_skin_dir}")
+            logger.warning(f"main.bmp not found in {self.skin_data.extracted_skin_dir}")
 
     def _render_titlebar(self, painter: QPainter):
         main_window_spec = self.skin_data.spec_json["destinations"]["main_window"]
@@ -799,3 +796,6 @@ class Renderer:
 
                 last_x = vis_area_x + i
                 last_y = y_pos
+
+
+logger = get_logger(__name__)

@@ -15,6 +15,8 @@ from mutagen import File as MutagenFile
 from scipy import signal  # type: ignore
 import queue
 from collections import deque
+from ..utils.metadata import extract_common_metadata
+from ..utils.logger import get_logger
 
 
 class AudioEngine:
@@ -42,8 +44,8 @@ class AudioEngine:
         # Thread control
         self.stop_event = threading.Event()
 
-        # Position update lock for thread safety
-        self.position_lock = threading.Lock()
+        # Shared state lock for is_playing, is_paused, current_position, seek_*
+        self._state_lock = threading.Lock()
 
         # Seeking control
         self.seek_requested = False
@@ -78,30 +80,26 @@ class AudioEngine:
             )
 
             # Reset seeking state for new track
-            with self.position_lock:
+            with self._state_lock:
                 self.seek_requested = False
                 self.seek_position = 0.0
 
             # Check if audio data is properly loaded
             if self.audio_data is None or len(self.audio_data) == 0:
-                print(f"Error: No audio data loaded from {file_path}")
+                logger.error(f"Error: No audio data loaded from {file_path}")
                 return False
 
             # If the file is mono, librosa returns a 1D array, if stereo, it returns a 2D array [channels, samples]
             # With mono=False, stereo files return [2, samples], mono files return [1, samples]
-            print(
-                f"Loaded track: {file_path}, Sample rate: {self.sample_rate} Hz, Duration: {self.duration:.2f} s, Shape: {self.audio_data.shape if self.audio_data is not None else 'None'}"
-            )
-            print(
-                f"Audio data type: {self.audio_data.dtype if self.audio_data is not None else 'None'}"
-            )
+            logger.info(f"Loaded track: {file_path}, Sample rate: {self.sample_rate} Hz, Duration: {self.duration:.2f} s, Shape: {self.audio_data.shape if self.audio_data is not None else 'None'}")
+            logger.info(f"Audio data type: {self.audio_data.dtype if self.audio_data is not None else 'None'}")
 
             # Load metadata
             self._load_metadata(file_path)
 
             return True
         except Exception as e:
-            print(f"Error loading track {file_path}: {e}")
+            logger.error(f"Error loading track {file_path}: {e}")
             return False
 
     def has_track_loaded(self):
@@ -113,69 +111,7 @@ class AudioEngine:
         try:
             audio_file = MutagenFile(file_path)
             if audio_file is not None:
-                # Helper function to safely extract metadata
-                def safe_extract_metadata(audio_file, keys):
-                    result = "Unknown"
-                    for key in keys:
-                        try:
-                            if key in audio_file:
-                                tag_value = audio_file[key]
-                                if isinstance(tag_value, list) and len(tag_value) > 0:
-                                    try:
-                                        raw_value = tag_value[0]
-                                        # Only convert to string if it's not None
-                                        if raw_value is not None:
-                                            result = str(raw_value).strip()
-                                        else:
-                                            result = "Unknown"
-                                    except (
-                                        UnicodeDecodeError,
-                                        TypeError,
-                                        AttributeError,
-                                    ):
-                                        # Handle cases where value can't be converted to string
-                                        result = "Unknown"
-                                elif (
-                                    isinstance(tag_value, list) and len(tag_value) == 0
-                                ):
-                                    continue
-                                else:
-                                    try:
-                                        # Handle single values
-                                        if tag_value is not None:
-                                            result = str(tag_value).strip()
-                                        else:
-                                            result = "Unknown"
-                                    except (
-                                        UnicodeDecodeError,
-                                        TypeError,
-                                        AttributeError,
-                                    ):
-                                        # Handle cases where value can't be converted to string
-                                        result = "Unknown"
-                                break
-                        except Exception:
-                            # If any key access fails, continue to next key
-                            continue
-                    return result if result else "Unknown"
-
-                # Title - try multiple possible keys for different formats
-                title_keys = ["TIT2", "title", "\xa9nam", "TITLE", "©nam"]
-                self.metadata["title"] = safe_extract_metadata(audio_file, title_keys)
-
-                # Artist - try multiple possible keys for different formats
-                artist_keys = ["TPE1", "artist", "\xa9ART", "ARTIST", "©ART"]
-                self.metadata["artist"] = safe_extract_metadata(audio_file, artist_keys)
-
-                # Album - try multiple possible keys for different formats
-                album_keys = ["TALB", "album", "\xa9alb", "ALBUM", "©alb"]
-                self.metadata["album"] = safe_extract_metadata(audio_file, album_keys)
-
-                # Album artist - try multiple possible keys for different formats
-                album_artist_keys = ["TPE2", "albumartist", "aART", "©aAR"]
-                self.metadata["album_artist"] = safe_extract_metadata(
-                    audio_file, album_artist_keys
-                )
+                self.metadata.update(extract_common_metadata(audio_file))
 
                 # Extract embedded album art
                 self.metadata["album_art"] = self._extract_album_art(audio_file)
@@ -191,35 +127,30 @@ class AudioEngine:
                         if hasattr(info, "bitrate")
                         else 0
                     )
-                    # Check if VBR (some formats might not have this info)
-                    self.is_vbr = (
-                        getattr(info, "bitrate_mode", 0) != 0
-                    )  # Placeholder logic
+                    self.is_vbr = getattr(info, "bitrate_mode", 0) != 0
             else:
-                # Fallback for formats not supported by mutagen
-                self.metadata = {
+                self.metadata.update({
                     "title": "Unknown",
                     "artist": "Unknown",
                     "album": "Unknown",
                     "album_artist": "Unknown",
                     "album_art": None,
                     "duration": self.duration,
-                }
+                })
         except Exception:
-            # If metadata loading fails completely, use defaults
-            self.metadata = {
+            self.metadata.update({
                 "title": "Unknown",
                 "artist": "Unknown",
                 "album": "Unknown",
                 "album_artist": "Unknown",
                 "album_art": None,
                 "duration": self.duration,
-            }
+            })
 
     def play(self):
         """Starts playback in a separate thread."""
         if self.audio_data is None:
-            print("No track loaded")
+            logger.info("No track loaded")
             return
 
         # Check if we are resuming from a paused state before stopping
@@ -232,41 +163,35 @@ class AudioEngine:
         if not was_paused and not self.is_playing:
             self.current_position = 0.0  # Start from beginning if not currently playing and not resuming from pause
 
-        self.is_playing = True
-        self.is_paused = False
+        self._set_state(True, False)
         self.stop_event.clear()  # Clear the stop event
         self.play_thread = threading.Thread(target=self._playback_worker)
         self.play_thread.start()
 
     def _ensure_stopped(self):
         """Ensures any existing playback is properly stopped."""
-        if self.is_playing or self.is_paused:
-            # Stop playback properly by setting flags and waiting for thread to finish
-            self.is_playing = False
-            self.is_paused = False
-            self.stop_event.set()  # Signal the thread to stop
-            # Wait for the thread to finish with a timeout
+        playing, paused = self._get_state()
+        if playing or paused:
+            self._set_state(False, False)
+            self.stop_event.set()
             if self.play_thread and self.play_thread.is_alive():
-                self.play_thread.join(
-                    timeout=2.0
-                )  # Wait up to 2 seconds for thread to finish
+                self.play_thread.join(timeout=2.0)
 
     def pause(self):
         """Pauses playback."""
-        if self.is_playing:
-            self.is_paused = True
-            self.is_playing = False
+        with self._state_lock:
+            if self.is_playing:
+                self.is_playing = False
+                self.is_paused = True
 
     def stop(self):
         """Stops playback and resets the position."""
-        self.is_playing = False
-        self.is_paused = False
-        self.current_position = 0.0
-        self.stop_event.set()  # Set stop event to signal thread to stop
+        self._set_state(False, False)
+        with self._state_lock:
+            self.current_position = 0.0
+        self.stop_event.set()
         if self.play_thread and self.play_thread.is_alive():
-            self.play_thread.join(
-                timeout=2.0
-            )  # Wait for thread to finish with longer timeout
+            self.play_thread.join(timeout=2.0)
 
     def set_eq(self, bands: Dict):
         """Sets the gain for different EQ frequency bands."""
@@ -393,9 +318,25 @@ class AudioEngine:
             return self.audio_data
         return np.array([])
 
+    def _get_state(self):
+        """Thread-safe read of playback state."""
+        with self._state_lock:
+            return self.is_playing, self.is_paused
+
+    def _set_state(self, playing: bool, paused: bool):
+        """Thread-safe write of playback state."""
+        with self._state_lock:
+            self.is_playing = playing
+            self.is_paused = paused
+
+    def _is_playing(self) -> bool:
+        """Thread-safe check if currently playing."""
+        with self._state_lock:
+            return self.is_playing
+
     def get_current_position(self) -> float:
         """Returns the current playback position in seconds."""
-        with self.position_lock:
+        with self._state_lock:
             return self.current_position
 
     def get_duration(self) -> float:
@@ -465,7 +406,7 @@ class AudioEngine:
                 return pic.data
 
         except Exception as e:
-            print(f"Error extracting album art: {e}")
+            logger.error(f"Error extracting album art: {e}")
             return None
 
         return None
@@ -493,7 +434,7 @@ class AudioEngine:
                     with open(album_art_file, "rb") as f:
                         return f.read()
                 except Exception as e:
-                    print(f"Error reading album art file {album_art_file}: {e}")
+                    logger.error(f"Error reading album art file {album_art_file}: {e}")
 
         return None
 
@@ -565,7 +506,7 @@ class AudioEngine:
     def get_playback_state(self):
         """Returns the current playback state."""
         # Acquire the position lock to ensure thread-safe access to current_position
-        with self.position_lock:
+        with self._state_lock:
             return {
                 "is_playing": self.is_playing,
                 "is_paused": self.is_paused,
@@ -619,7 +560,8 @@ class AudioEngine:
         # Process audio data for visualization as it becomes available
         while not self.vis_stop_event.is_set():
             # Only process if we're playing audio
-            if self.is_playing and not self.is_paused and self.audio_data is not None:
+            playing, paused = self._get_state()
+            if playing and not paused and self.audio_data is not None:
                 # Get recent audio samples from the buffer for processing
                 if len(self.audio_buffer) > 0:
                     # Convert deque to numpy array for processing
@@ -730,9 +672,8 @@ class AudioEngine:
             # Clamp to valid range
             target_time = max(0.0, min(self.duration, target_sample / self.sample_rate))
 
-            with self.position_lock:
+            with self._state_lock:
                 self.current_position = target_time
-                # Set seeking flag and position
                 self.seek_position = target_time
                 self.seek_requested = True
 
@@ -750,8 +691,8 @@ class AudioEngine:
         else:
             channels = self.audio_data.shape[0]
 
-        # Use the object-level lock for safe position updates
-        position_lock = self.position_lock
+        # Use the object-level lock for safe state updates
+        state_lock = self._state_lock
 
         # Track last callback time for throttling
         callback_interval = 0.1  # 100ms between callbacks to avoid flooding UI
@@ -764,14 +705,11 @@ class AudioEngine:
             nonlocal start_idx
 
             # Check if a seek has been requested
-            with self.position_lock:
+            with self._state_lock:
                 if self.seek_requested:
-                    # Convert seek position (in seconds) to sample index
                     seek_start_idx = int(self.seek_position * self.sample_rate)
                     start_idx = seek_start_idx
-                    # Also update current position to reflect the seek
                     self.current_position = self.seek_position
-                    # Reset the seek flag
                     self.seek_requested = False
 
             # Calculate end index for this chunk
@@ -830,7 +768,7 @@ class AudioEngine:
             # Clamp position to valid range to prevent overflow
             new_position = max(0.0, min(new_position, self.duration))
 
-            with position_lock:
+            with state_lock:
                 self.current_position = new_position
 
             # Add audio samples to the visualization buffer for processing
@@ -851,7 +789,7 @@ class AudioEngine:
             if (current_time - last_callback_time[0]) >= callback_interval:
                 try:
                     # Use a copy of the position to avoid race conditions
-                    with position_lock:
+                    with state_lock:
                         pos_copy = self.current_position
 
                     # Call playback callback if available
@@ -860,7 +798,7 @@ class AudioEngine:
 
                     last_callback_time[0] = current_time
                 except Exception as e:
-                    print(f"Error in audio callbacks: {e}")
+                    logger.error(f"Error in audio callbacks: {e}")
 
             # Copy to output buffer
             if self.audio_data.ndim > 1:
@@ -920,8 +858,9 @@ class AudioEngine:
                 if self.audio_data.ndim > 1
                 else len(self.audio_data)
             ):
-                self.is_playing = False
-                self.is_paused = False
+                with state_lock:
+                    self.is_playing = False
+                    self.is_paused = False
 
         # Open and start the audio stream
         try:
@@ -938,7 +877,7 @@ class AudioEngine:
                     else len(self.audio_data)
                 )
                 while (
-                    self.is_playing
+                    self._is_playing()
                     and start_idx < total_samples
                     and not self.stop_event.is_set()
                 ):
@@ -949,12 +888,13 @@ class AudioEngine:
                         break
 
         except Exception as e:
-            print(f"Error in audio playback: {e}")
+            logger.error(f"Error in audio playback: {e}")
 
         finally:
-            # When playback finishes, update state
-            if not self.is_paused:
-                self.is_playing = False
-                self.is_paused = False
-            # Clear the stop event for next playback
+            playing, paused = self._get_state()
+            if not paused:
+                self._set_state(False, False)
             self.stop_event.clear()
+
+
+logger = get_logger(__name__)

@@ -35,6 +35,10 @@ from PySide6.QtWidgets import (
     QLineEdit,
 )
 
+from ..utils.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class PreferencesDialog(QDialog):
     def __init__(self, parent=None, preferences=None):
@@ -196,9 +200,7 @@ class MainWindow(QWidget):
 
         # If the preferred skin failed to load, fall back to default
         if not self.skin_data.extracted_skin_dir and preferred_skin:
-            print(
-                f"WARNING: Preferred skin {preferred_skin} failed to load, falling back to default"
-            )
+            logger.error(f"Preferred skin {preferred_skin} failed to load, falling back to default")
             self.skin_path = self.default_skin_path
             self.skin_parser = SkinParser(self.skin_path)
             self.skin_data = self.skin_parser.parse()
@@ -225,18 +227,14 @@ class MainWindow(QWidget):
         try:
             from ..utils.mac_media_integration import create_mac_media_integration
 
-            print("Attempting to create macOS media integration...")
+            logger.info("Attempting to create macOS media integration...")
             self.mac_media_integration = create_mac_media_integration(self)
             if self.mac_media_integration:
-                print("macOS media integration successfully loaded")
+                logger.info("macOS media integration successfully loaded")
             else:
-                print(
-                    "macOS media integration not loaded (likely not on macOS or PyObjC unavailable)"
-                )
+                logger.info("macOS media integration not loaded (likely not on macOS or PyObjC unavailable)")
         except ImportError as e:
-            print(
-                f"Could not import mac_media_integration: {e}"
-            )  # pyobjc not available
+            logger.info(f"Could not import mac_media_integration: {e}")  # pyobjc not available
 
         # Set up keyboard shortcuts for media controls
         self.setup_media_shortcuts()
@@ -1871,7 +1869,7 @@ class MainWindow(QWidget):
             new_skin_data = new_skin_parser.parse()
 
             if not new_skin_data.extracted_skin_dir:
-                print(f"ERROR: Failed to load skin from {skin_path}")
+                logger.error(f"Failed to load skin from {skin_path}")
                 return
 
             # Update the current skin parser and data
@@ -1931,7 +1929,7 @@ class MainWindow(QWidget):
             self.update()
 
         except Exception as e:
-            print(f"ERROR: Failed to load new skin: {e}")
+            logger.error(f"Failed to load new skin: {e}")
 
     def show_skin_selection_dialog(self):
         """Show the skin selection dialog and handle the result."""
@@ -1999,9 +1997,7 @@ class MainWindow(QWidget):
             stop_shortcut.activated.connect(self._handle_stop_action)
         except Exception:
             # If Media keys are not supported on this system, just use space bar as primary control
-            print(
-                "Media keys not supported on this system, use Space bar for play/pause"
-            )
+            logger.info("Media keys not supported on this system, use Space bar for play/pause")
 
         # Using only regular PyQt5 keyboard shortcuts for media keys
         # These work without requiring system permissions on macOS
@@ -2049,7 +2045,7 @@ class MainWindow(QWidget):
         - If no track is playing BUT playlist is not empty, add to playlist and play the new track
         """
         if not os.path.isfile(file_path):
-            print(f"File not found: {file_path}")
+            logger.error(f"File not found: {file_path}")
             return False
 
         # Check if it's a playlist file
@@ -2115,28 +2111,26 @@ class MainWindow(QWidget):
 
                 # If a track is playing, just add to playlist and return
                 if is_playing:
-                    print(
-                        f"Added {os.path.basename(file_path)} to playlist (not interrupting current track)"
-                    )
+                    logger.info(f"Added {os.path.basename(file_path)} to playlist (not interrupting current track)")
                     return True
 
                 # If no track is playing but playlist was not empty, play the newly added track
                 # Find the index of the newly added track (it's at the end)
                 new_index = len(self.playlist) - 1
                 if self.play_track_at_index(new_index):
-                    print(f"Now playing {os.path.basename(file_path)}")
+                    logger.info(f"Now playing {os.path.basename(file_path)}")
                     return True
                 else:
                     self.ui_state.current_track_title = "Error loading track"
                     return False
             else:
-                print(f"File {file_path} already exists in playlist, skipping")
+                logger.info(f"File {file_path} already exists in playlist, skipping")
                 return True
 
     def load_directory(self, directory_path):
         """Load all media files from a directory and its subdirectories."""
         if not os.path.isdir(directory_path):
-            print(f"Directory not found: {directory_path}")
+            logger.error(f"Directory not found: {directory_path}")
             return False
 
         # Define supported media file extensions
@@ -2198,7 +2192,7 @@ class MainWindow(QWidget):
 
             return True
         else:
-            print(f"No media files found in directory: {directory_path}")
+            logger.info(f"No media files found in directory: {directory_path}")
             return False
 
     def load_playlist_file(self, playlist_file_path):
@@ -2207,7 +2201,7 @@ class MainWindow(QWidget):
         This mimics the functionality from the playlist window's Load Playlist function.
         """
         if not os.path.isfile(playlist_file_path):
-            print(f"Playlist file not found: {playlist_file_path}")
+            logger.error(f"Playlist file not found: {playlist_file_path}")
             return False
 
         new_filepaths = []
@@ -2316,25 +2310,21 @@ class MainWindow(QWidget):
                 if self.playlist:
                     first_track_index = 0
                     if self.play_track_at_index(first_track_index):
-                        print(
-                            f"Loaded playlist and started playing: {os.path.basename(self.playlist[first_track_index])}"
-                        )
+                        logger.info(f"Loaded playlist and started playing: {os.path.basename(self.playlist[first_track_index])}")
                         return True
                     else:
                         # If we can't play the first track, still consider the playlist loaded
-                        print(
-                            f"Playlist loaded with {len(self.playlist)} tracks, but first track failed to play"
-                        )
+                        logger.error(f"Playlist loaded with {len(self.playlist)} tracks, but first track failed to play")
                         return True
                 else:
-                    print("Playlist loaded but is empty")
+                    logger.info("Playlist loaded but is empty")
                     return True
             else:
-                print("No valid file paths found in playlist file")
+                logger.info("No valid file paths found in playlist file")
                 return False
 
         except Exception as e:
-            print(f"Error loading playlist file {playlist_file_path}: {str(e)}")
+            logger.error(f"Error loading playlist file {playlist_file_path}: {str(e)}")
             return False
 
     def dragEnterEvent(self, event):

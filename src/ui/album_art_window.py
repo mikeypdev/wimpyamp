@@ -14,6 +14,7 @@ from PySide6.QtCore import Qt, QRect, QPoint
 from PySide6.QtCore import QTimer  # For resize handle detection
 
 from ..utils.region_utils import apply_region_mask_to_widget
+from ..utils.logger import get_logger
 
 
 class AlbumArtWindow(QWidget):
@@ -207,7 +208,7 @@ class AlbumArtWindow(QWidget):
 
         # Ensure the pixmap is valid after processing
         if pixmap.isNull():
-            print("Warning: Preprocessed image is null")
+            logger.warning("Warning: Preprocessed image is null")
             return pixmap
 
         return pixmap
@@ -270,21 +271,15 @@ class AlbumArtWindow(QWidget):
                             self.set_album_art(pixmap)
                             return
                         else:
-                            print(
-                                f"Warning: Image became null after preprocessing for {current_file_path}"
-                            )
+                            logger.warning(f"Warning: Image became null after preprocessing for {current_file_path}")
                     else:
-                        print(
-                            f"Warning: Failed to load image data for {current_file_path}"
-                        )
+                        logger.error(f"Warning: Failed to load image data for {current_file_path}")
                 else:
                     # Embedded image data is corrupted
-                    print(
-                        f"Warning: Corrupted embedded album art in {current_file_path}"
-                    )
+                    logger.warning(f"Warning: Corrupted embedded album art in {current_file_path}")
             except Exception as e:
                 # Error occurred while loading embedded art
-                print(f"Error loading embedded album art from {current_file_path}: {e}")
+                logger.error(f"Error loading embedded album art from {current_file_path}: {e}")
 
         # 2. If no embedded art, search for local folder images
         folder_path = os.path.dirname(current_file_path)
@@ -374,15 +369,13 @@ class AlbumArtWindow(QWidget):
                     return
                 else:
                     # Default image data is corrupted
-                    print(
-                        f"Warning: Default album art image is corrupted: {default_art_path}"
-                    )
+                    logger.warning(f"Warning: Default album art image is corrupted: {default_art_path}")
             else:
                 # Default image file is missing
-                print(f"Warning: Default album art image not found: {default_art_path}")
+                logger.warning(f"Warning: Default album art image not found: {default_art_path}")
         except Exception as e:
             # Error occurred while loading default image
-            print(f"Error loading default album art: {e}")
+            logger.error(f"Error loading default album art: {e}")
 
         # If the default image is missing or corrupted, fill with black
         black_pixmap = QPixmap(self.size())
@@ -428,17 +421,15 @@ class AlbumArtWindow(QWidget):
                     self.set_album_art(pixmap)
                     return True
                 else:
-                    print(
-                        f"Warning: Image became null after preprocessing from: {file_path}"
-                    )
+                    logger.warning(f"Warning: Image became null after preprocessing from: {file_path}")
                     return False
             else:
                 # File exists but image is corrupted
-                print(f"Warning: Corrupted image file: {file_path}")
+                logger.warning(f"Warning: Corrupted image file: {file_path}")
                 return False
         except Exception as e:
             # Error occurred while loading the image
-            print(f"Error loading image file {file_path}: {e}")
+            logger.error(f"Error loading image file {file_path}: {e}")
             return False
         finally:
             # Remove from loading operations
@@ -906,3 +897,6 @@ class AlbumArtWindow(QWidget):
 
         # Apply any region mask changes
         self.apply_region_mask()
+
+
+logger = get_logger(__name__)

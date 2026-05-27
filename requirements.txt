@@ -9,9 +9,4 @@ scipy
 numpy
 pyobjc-core; sys_platform == 'darwin'
 pyobjc-framework-MediaPlayer; sys_platform == 'darwin'
-bump2version
 appdirs
-black
-ruff
-pytest
-mypy

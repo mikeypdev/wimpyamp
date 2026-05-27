@@ -11,6 +11,7 @@ from ..core.skin_parser import SkinParser
 from ..core.sprite_manager import SpriteManager
 from ..utils.color import MAGENTA_TRANSPARENCY_RGB
 from ..utils.region_utils import apply_region_mask_to_widget
+from ..utils.logger import get_logger
 
 
 class EqualizerWindow(QWidget):
@@ -39,7 +40,7 @@ class EqualizerWindow(QWidget):
         else:
             # Fallback if spec is not loaded
             self.setGeometry(0, 0, 275, 116)
-            print("WARNING: EQ spec not loaded, using default geometry.")
+            logger.warning("EQ spec not loaded, using default geometry.")
 
         # Store button states
         self.on_button_state = "unpressed"
@@ -437,7 +438,7 @@ class EqualizerWindow(QWidget):
             or not self.sprite_manager
             or not self.eq_spec_json
         ):
-            print("ERROR: Missing skin data, sprite manager, or EQ spec.")
+            logger.error("Missing skin data, sprite manager, or EQ spec.")
             painter.end()
             return
 
@@ -757,7 +758,7 @@ class EqualizerWindow(QWidget):
             self.setGeometry(self.x(), self.y(), default_size["w"], default_size["h"])
         else:
             # Fallback if spec is not loaded
-            print("WARNING: EQ spec not loaded, using default geometry.")
+            logger.warning("EQ spec not loaded, using default geometry.")
 
         # Apply region mask if available
         self.apply_region_mask()
@@ -789,3 +790,6 @@ if __name__ == "__main__":
     eq_window = EqualizerWindow(None, skin_data, sprite_manager)
     eq_window.show()
     sys.exit(app.exec_())
+
+
+logger = get_logger(__name__)
