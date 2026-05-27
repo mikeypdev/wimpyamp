@@ -6,6 +6,8 @@ Provides a unified interface for extracting metadata from various audio formats
 """
 
 from mutagen import File as MutagenFile
+import os
+import re
 
 from ..utils.logger import get_logger
 
@@ -127,3 +129,56 @@ def load_metadata_for_file(filepath: str) -> dict:
     except (OSError, KeyError, AttributeError, TypeError, ValueError) as e:
         logger.debug(f"Could not load metadata for {filepath}: {e}")
         return defaults
+
+
+_ALBUM_ART_SEARCH_ORDER = [
+    "folder.jpg",
+    "folder.png",
+    "cover.jpg",
+    "cover.png",
+    "album.jpg",
+    "album.png",
+]
+
+_ALBUM_ART_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".gif"}
+
+
+def normalize_filename(filename: str) -> str:
+    """Normalize a filename for comparison by lowercasing and collapsing separators."""
+    normalized = filename.lower()
+    normalized = re.sub(r"[-_\s]+", " ", normalized)
+    normalized = re.sub(r"[^\w\s]", "", normalized)
+    return " ".join(normalized.split())
+
+
+def search_local_album_art(folder_path: str, album_title: str = "Unknown") -> str | None:
+    """Search for local album art files in a folder.
+
+    Checks standard filenames first, then falls back to matching
+    image filenames against the album title.
+
+    Args:
+        folder_path: Directory to search in.
+        album_title: Album title for fallback matching.
+
+    Returns:
+        Path to the found image file, or None.
+    """
+    if not os.path.isdir(folder_path):
+        return None
+
+    for filename in _ALBUM_ART_SEARCH_ORDER:
+        file_path = os.path.join(folder_path, filename)
+        if os.path.exists(file_path):
+            return file_path
+
+    if album_title and album_title != "Unknown":
+        normalized_title = normalize_filename(album_title)
+        for filename in os.listdir(folder_path):
+            if os.path.isfile(os.path.join(folder_path, filename)):
+                name, ext = os.path.splitext(filename)
+                if ext.lower() in _ALBUM_ART_EXTENSIONS:
+                    if normalize_filename(name).startswith(normalized_title):
+                        return os.path.join(folder_path, filename)
+
+    return None

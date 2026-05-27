@@ -1,6 +1,9 @@
+from collections import OrderedDict
 from PySide6.QtGui import QImage, QPixmap, QColor
 import os
 from .logger import get_logger
+
+MAX_GLYPH_CACHE_SIZE = 500
 
 
 class TextRenderer:
@@ -8,7 +11,7 @@ class TextRenderer:
         self.skin_data = skin_data
         self.text_bmp_path = self.skin_data.get_path("TEXT.BMP")
         self.text_bmp_image = None
-        self.glyph_cache = {}  # Cache for individual glyph QPixmaps
+        self.glyph_cache: OrderedDict = OrderedDict()
 
         self.glyph_spec = self.skin_data.spec_json["sheets"]["text.bmp"]["glyph_grid"]
 
@@ -142,6 +145,7 @@ class TextRenderer:
         """
         cache_key = (char_code, band)
         if cache_key in self.glyph_cache:
+            self.glyph_cache.move_to_end(cache_key)
             return self.glyph_cache[cache_key]
 
         if self.text_bmp_image is None:
@@ -172,6 +176,8 @@ class TextRenderer:
             transparent_image.fill(QColor(0, 0, 0, 0))  # Fill with transparent black
             pixmap = QPixmap.fromImage(transparent_image)
             self.glyph_cache[cache_key] = pixmap
+            while len(self.glyph_cache) > MAX_GLYPH_CACHE_SIZE:
+                self.glyph_cache.popitem(last=False)
             return pixmap
 
         # Ensure the glyph coordinates are within the bounds of text_bmp_image
@@ -220,6 +226,8 @@ class TextRenderer:
 
         pixmap = QPixmap.fromImage(cropped_q_image)
         self.glyph_cache[cache_key] = pixmap
+        while len(self.glyph_cache) > MAX_GLYPH_CACHE_SIZE:
+            self.glyph_cache.popitem(last=False)
         return pixmap
 
     def render_text(self, painter, text, start_x, start_y):

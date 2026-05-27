@@ -955,3 +955,97 @@ class PlaylistRendererMixin:
 
         # Note: Up and down arrow buttons are not drawn in this implementation
 
+    def _draw_time_display(self, painter):
+        """Draw the current time display (minutes and seconds) using text renderer."""
+        if not self.main_window or not self.text_renderer:
+            return
+
+        # Get current playback state from main window
+        state = self.main_window.audio_engine.get_playback_state()
+        current_position = state.get("position", 0.0)
+
+        # Calculate minutes and seconds
+        total_seconds = int(current_position)
+        minutes = total_seconds // 60
+        seconds = total_seconds % 60
+
+        # Format as two-digit strings
+        minutes_str = f"{minutes:02d}"  # Two-digit minutes string (e.g., "05", "12")
+        seconds_str = f"{seconds:02d}"  # Two-digit seconds string (e.g., "05", "43")
+
+        # Get the right control bar sprite position to place the time display
+        right_control_bar_sprite = self._get_sprite_pixmap(
+            "PLEDIT_BOTTOM_RIGHT_CONTROL_BAR"
+        )
+        if right_control_bar_sprite:
+            right_control_bar_x = self.width() - right_control_bar_sprite.width()
+            bottom_bar_y = self._get_bottom_bar_y()
+
+            # The time display areas are located in the control bar at specific coordinates
+            # According to the spec: PLEDIT_CURRENT_TIME_MINUTES at x=190, y=95 and PLEDIT_CURRENT_TIME_SECONDS at x=212, y=95
+            # These are relative to the control bar sprite: minutes at (190-126=64, 95-72=23) and seconds at (212-126=86, 23)
+
+            # Calculate base positions for minutes and seconds displays
+            minutes_display_x = right_control_bar_x + 64  # 190 - 126
+            seconds_display_x = right_control_bar_x + 86  # 212 - 126
+            time_display_y = bottom_bar_y + 23  # 95 - 72
+
+            # Draw minutes digits - right-aligned within the minutes display area
+            # Minutes display area is 19px wide, 2 digits take 10px (2 * 5px), so right-align by moving right
+            minutes_text_width = len(minutes_str) * 5  # 5px per character
+            minutes_right_aligned_x = (
+                minutes_display_x + 19 - minutes_text_width - 1
+            )  # Right-align within 19px area with 1px padding
+            self.text_renderer.render_text(
+                painter, minutes_str, minutes_right_aligned_x, time_display_y
+            )
+
+            # Draw seconds digits - left-aligned within the seconds display area
+            # Seconds display area is 10px wide, 2 digits take 10px (2 * 5px), so use base position
+            self.text_renderer.render_text(
+                painter, seconds_str, seconds_display_x, time_display_y
+            )
+
+    def _draw_playlist_time_status_display(self, painter):
+        """Draw the playlist time status display showing current / total time."""
+        if not self.main_window or not self.text_renderer:
+            return
+
+        # Get the PLEDIT_TIME_STATUS_DISPLAY sprite position
+        time_status_sprite = self._get_sprite_pixmap("PLEDIT_TIME_STATUS_DISPLAY")
+        if time_status_sprite:
+            # Position is relative to bottom right control bar
+            right_control_bar_sprite = self._get_sprite_pixmap(
+                "PLEDIT_BOTTOM_RIGHT_CONTROL_BAR"
+            )
+            if right_control_bar_sprite:
+                right_control_bar_x = self.width() - right_control_bar_sprite.width()
+                bottom_bar_y = self._get_bottom_bar_y()
+
+                # According to the spec: PLEDIT_TIME_STATUS_DISPLAY at (133, 82) in the sprite
+                # So relative to the control bar: x = 133 - 126 = 7, y = 82 - 72 = 10
+                time_status_x = right_control_bar_x + 7  # 133 - 126
+                time_status_y = bottom_bar_y + 10  # 82 - 72
+
+                # Format the time as "0:00 / total_time"
+                current_time_str = "0:00"
+                total_time = self._get_playlist_total_time()
+                total_time_str = self._format_time(total_time)
+
+                display_text = f"{current_time_str} / {total_time_str}"
+
+                # Draw the formatted time string - right-aligned within the display area
+                text_width = len(display_text) * 5  # 5px per character
+                display_area_width = time_status_sprite.width()
+
+                # Right-align the text within the display area
+                text_x = (
+                    time_status_x + display_area_width - text_width - 2
+                )  # 2px padding from right edge
+                # Adjust vertical position - the time status area is 6px high
+                # Position the text at the top of the area
+                text_y = time_status_y  # Align to top of the 6px area
+
+                # Use a smaller font or scale for better fit if needed
+                self.text_renderer.render_text(painter, display_text, text_x, text_y)
+

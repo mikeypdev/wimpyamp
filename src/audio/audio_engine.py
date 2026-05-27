@@ -15,7 +15,7 @@ from mutagen import File as MutagenFile
 from scipy import signal  # type: ignore
 import queue
 from collections import deque
-from ..utils.metadata import extract_common_metadata
+from ..utils.metadata import extract_common_metadata, search_local_album_art
 from ..utils.logger import get_logger
 
 
@@ -153,15 +153,18 @@ class AudioEngine:
             logger.info("No track loaded")
             return
 
-        # Check if we are resuming from a paused state before stopping
-        was_paused = self.is_paused
+        # Snapshot state atomically before stopping
+        with self._state_lock:
+            was_paused = self.is_paused
+            was_playing = self.is_playing
 
         # Ensure any existing playback is stopped before starting new playback
         self._ensure_stopped()
 
         # If we were paused, don't reset the position
-        if not was_paused and not self.is_playing:
-            self.current_position = 0.0  # Start from beginning if not currently playing and not resuming from pause
+        if not was_paused and not was_playing:
+            with self._state_lock:
+                self.current_position = 0.0
 
         self._set_state(True, False)
         self.stop_event.clear()  # Clear the stop event
@@ -440,58 +443,8 @@ class AudioEngine:
 
     def _search_local_album_art(self, folder_path):
         """Search for local album art files in the specified folder."""
-        import os
-
-        if not os.path.isdir(folder_path):
-            return None
-
-        # Define the search order according to the specification
-        search_files = [
-            "folder.jpg",
-            "folder.png",
-            "cover.jpg",
-            "cover.png",
-            "album.jpg",
-            "album.png",
-        ]
-
-        # First, check for standard filenames in order of preference
-        for filename in search_files:
-            file_path = os.path.join(folder_path, filename)
-            if os.path.exists(file_path):
-                return file_path
-
-        # If standard names aren't found, search for album title matches
-        # Get the album name from metadata if possible
-        metadata = self.get_metadata()
-        album_title = metadata.get("album", "Unknown")
-
-        # Normalize album title for matching
-        normalized_title = self._normalize_filename(album_title)
-
-        # Look for files starting with the album title
-        for filename in os.listdir(folder_path):
-            if os.path.isfile(os.path.join(folder_path, filename)):
-                name, ext = os.path.splitext(filename)
-                if ext.lower() in [".jpg", ".jpeg", ".png", ".bmp", ".gif"]:
-                    if self._normalize_filename(name).startswith(normalized_title):
-                        return os.path.join(folder_path, filename)
-
-        return None
-
-    def _normalize_filename(self, filename):
-        """Normalize a filename for comparison by converting to lowercase and handling special characters."""
-        import re
-
-        # Convert to lowercase
-        normalized = filename.lower()
-        # Replace common separators with spaces
-        normalized = re.sub(r"[-_\s]+", " ", normalized)
-        # Remove common characters that don't affect matching
-        normalized = re.sub(r"[^\w\s]", "", normalized)
-        # Split and rejoin to normalize multiple spaces to single spaces
-        normalized = " ".join(normalized.split())
-        return normalized
+        album_title = self.metadata.get("album", "Unknown")
+        return search_local_album_art(folder_path, album_title)
 
     def get_metadata(self):
         """Returns metadata of the loaded track."""

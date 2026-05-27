@@ -7,6 +7,7 @@ from appdirs import user_data_dir  # type: ignore
 from .region_parser import parse_region_file
 from .skin_data import SkinData
 from ..utils.file_utils import extract_zip_safely
+from ..utils.vis_colors import DEFAULT_VIS_COLORS
 from ..utils.logger import get_logger
 
 
@@ -176,7 +177,7 @@ class SkinParser:
             self.skin_data.viscolor_data = self._load_viscolor_file(viscolor_path)
         else:
             logger.warning(f"viscolor.txt not found in {self.skin_data.extracted_skin_dir}, using defaults")
-            self.skin_data.viscolor_data = self._get_default_viscolor_data()
+            self.skin_data.viscolor_data = list(DEFAULT_VIS_COLORS)
 
     def _load_region_data(self):
         region_path = self.skin_data.get_path("region.txt")
@@ -221,32 +222,7 @@ class SkinParser:
             return colors
         except (OSError, ValueError) as e:
             logger.error(f"Could not load viscolor.txt: {e}")
-            return self._get_default_viscolor_data()
-
-    def _get_default_viscolor_data(self):
-        """Generate default viscolor data if viscolor.txt is not available."""
-        colors = [(0, 0, 0), (40, 40, 40)]
-        for i in range(16):
-            ratio = i / 15.0 if i > 0 else 0
-            r = int(255 * ratio)
-            g = 0
-            b = int(255 * (1 - ratio))
-            colors.append(
-                (max(0, min(255, r)), max(0, min(255, g)), max(0, min(255, b)))
-            )
-
-        osc_colors = [
-            (255, 255, 255),
-            (0, 255, 0),
-            (0, 128, 255),
-            (255, 0, 255),
-            (255, 255, 0),
-        ]
-        colors.extend(osc_colors)
-        colors.append((255, 255, 0))
-        colors.append((255, 128, 0))
-
-        return colors[:24]
+            return list(DEFAULT_VIS_COLORS)
 
 
 logger = get_logger(__name__)

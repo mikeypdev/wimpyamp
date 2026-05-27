@@ -5,6 +5,7 @@ from ..utils.color import MAGENTA_TRANSPARENCY_RGB
 from ..utils.text_renderer import TextRenderer
 from ..utils.scrolling_text_renderer import ScrollingTextRenderer
 from ..utils.sprite_validator import validate_sprite_in_bmp
+from ..utils.vis_colors import DEFAULT_VIS_COLORS
 import os
 import math
 from ..utils.logger import get_logger
@@ -604,7 +605,7 @@ class Renderer:
     def _render_visualization(self, painter: QPainter):
         vis_colors = self.skin_data.viscolor_data
         if len(vis_colors) < 24:
-            vis_colors = self._get_default_vis_colors()
+            vis_colors = list(DEFAULT_VIS_COLORS)
         vis_area_x = 24
         vis_area_y = 43
         vis_area_width = 76
@@ -623,45 +624,6 @@ class Renderer:
             self._render_spectrum_analyzer(painter, vis_area_x, vis_area_y, vis_colors)
         elif self.current_vis_mode == "OSCILLOSCOPE":
             self._render_oscilloscope(painter, vis_area_x, vis_area_y, vis_colors)
-
-    def _get_default_vis_colors(self):
-        """Generate default visualization colors if viscolor.txt is not available."""
-        # Default color scheme matching the skin parser defaults
-        colors = []
-
-        # Color #0: Background color (black)
-        colors.append((0, 0, 0))
-
-        # Color #1: Background dots (dark gray)
-        colors.append((40, 40, 40))
-
-        # Create a gradient from blue to red (16 colors for spectrum analyzer)
-        for i in range(16):
-            # Interpolate from blue to red
-            ratio = i / 15.0 if i > 0 else 0
-            r = int(255 * ratio)
-            g = 0
-            b = int(255 * (1 - ratio))
-            colors.append(
-                (max(0, min(255, r)), max(0, min(255, g)), max(0, min(255, b)))
-            )
-
-        # Oscilloscope colors (typically brighter colors for the waveform display)
-        osc_colors = [
-            (255, 255, 255),  # White
-            (0, 255, 0),  # Green
-            (0, 128, 255),  # Light blue
-            (255, 0, 255),  # Magenta
-            (255, 255, 0),  # Yellow
-        ]
-        colors.extend(osc_colors)
-
-        colors.append((255, 255, 0))  # Additional color
-
-        # Color #24: Additional bright color
-        colors.append((255, 128, 0))  # Orange
-
-        return colors[:24]  # Ensure we have exactly 24 colors
 
     def set_visualization_mode(self, mode):
         """Set the current visualization mode (SPECTRUM, OSCILLOSCOPE, or OFF)."""
