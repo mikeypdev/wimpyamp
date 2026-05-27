@@ -124,7 +124,7 @@ class Renderer:
                 painter.drawPixmap(dest_area["x"], dest_area["y"], pixmap)
         except KeyError as e:
             logger.error(f"Sprite '{sprite_id}' not found in sheet '{sheet_name}' spec: {e}")
-        except Exception as e:
+        except (OSError, ValueError, RuntimeError) as e:
             logger.error(f"ERROR drawing sprite {sprite_id} from {sheet_name}: {e}")
 
     def render(self, painter: QPainter, ui_state: "UIState"):

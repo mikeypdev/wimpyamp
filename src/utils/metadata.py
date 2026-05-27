@@ -90,7 +90,7 @@ def extract_track_number(audio_file) -> str:
             return track_str.split("/")[0].strip()
         elif "tracknumber" in audio_file:
             return str(audio_file["tracknumber"][0]).split("/")[0].strip()
-    except Exception:
+    except (KeyError, TypeError, AttributeError, IndexError):
         pass
     return "Unknown"
 
@@ -124,5 +124,6 @@ def load_metadata_for_file(filepath: str) -> dict:
             metadata["duration"] = audio_file.info.length
 
         return metadata
-    except Exception:
+    except (OSError, KeyError, AttributeError, TypeError, ValueError) as e:
+        logger.debug(f"Could not load metadata for {filepath}: {e}")
         return defaults

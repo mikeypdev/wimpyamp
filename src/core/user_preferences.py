@@ -160,7 +160,7 @@ class UserPreferences:
 
                 return True
 
-            except Exception as e:
+            except (OSError, ValueError, TypeError) as e:
                 # Clean up temp file if something went wrong
                 try:
                     os.remove(temp_path)

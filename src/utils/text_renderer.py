@@ -130,8 +130,8 @@ class TextRenderer:
         try:
             self.text_bmp_image = QImage(self.text_bmp_path)
             if self.text_bmp_image.isNull():
-                raise Exception("QImage failed to load TEXT.BMP")
-        except Exception as e:
+                raise OSError("QImage failed to load TEXT.BMP")
+        except (OSError, ValueError) as e:
             logger.error(f"Failed to load TEXT.BMP with QImage: {e}")
             self.text_bmp_image = None
 

@@ -132,7 +132,7 @@ class SkinParser:
             # Reopen after verify since verify() closes the file
             with Image.open(main_bmp_path) as img:
                 img.load()  # Read the file to be sure
-        except Exception as e:
+        except (OSError, ValueError) as e:
             logger.info(f"main.bmp is not a valid image file: {e}")
             return False
 
@@ -185,43 +185,12 @@ class SkinParser:
                 with open(region_path, "r") as f:
                     region_content = f.read()
                 self.skin_data.region_data = parse_region_file(region_content)
-            except Exception as e:
+            except (OSError, ValueError) as e:
                 logger.warning(f"Could not parse region.txt: {e}")
                 self.skin_data.region_data = None
         else:
             logger.info(f"region.txt not found in {self.skin_data.extracted_skin_dir}, skipping region parsing")
             self.skin_data.region_data = None
-
-    def get_sprite(self, sheet_name, sprite_id):
-        if not self.skin_data.spec_json:
-            logger.error("Skin specification not loaded.")
-            return None
-
-        spec = self.skin_data.spec_json
-
-        if sheet_name not in spec["sheets"]:
-            logger.error(f"Sheet '{sheet_name}' not found in skin specification.")
-            return None
-
-        sheet = spec["sheets"][sheet_name]
-        if sprite_id not in sheet["sprites"]:
-            logger.error(f"Sprite '{sprite_id}' not found in sheet '{sheet_name}'.")
-            return None
-
-        sprite_info = sheet["sprites"][sprite_id]
-
-        sheet_path = self.skin_data.get_path(sheet_name)
-        if not sheet_path:
-            # The warning is printed by get_path if file not found
-            return None
-
-        return {
-            "sheet_path": sheet_path,
-            "x": sprite_info["x"],
-            "y": sprite_info["y"],
-            "w": sprite_info["w"],
-            "h": sprite_info["h"],
-        }
 
     def _load_viscolor_file(self, viscolor_path):
         """Load and parse the viscolor.txt file into an array of RGB tuples."""
@@ -250,7 +219,7 @@ class SkinParser:
                 colors.append((0, 0, 0))
 
             return colors
-        except Exception as e:
+        except (OSError, ValueError) as e:
             logger.error(f"Could not load viscolor.txt: {e}")
             return self._get_default_viscolor_data()
 
@@ -278,9 +247,6 @@ class SkinParser:
         colors.append((255, 128, 0))
 
         return colors[:24]
-
-
-# Ensure we have exactly 24 colors
 
 
 logger = get_logger(__name__)

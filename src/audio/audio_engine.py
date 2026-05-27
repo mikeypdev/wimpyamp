@@ -98,7 +98,7 @@ class AudioEngine:
             self._load_metadata(file_path)
 
             return True
-        except Exception as e:
+        except (OSError, ValueError, TypeError, RuntimeError) as e:
             logger.error(f"Error loading track {file_path}: {e}")
             return False
 
@@ -137,7 +137,7 @@ class AudioEngine:
                     "album_art": None,
                     "duration": self.duration,
                 })
-        except Exception:
+        except (OSError, KeyError, AttributeError, TypeError, ValueError):
             self.metadata.update({
                 "title": "Unknown",
                 "artist": "Unknown",
@@ -374,7 +374,7 @@ class AudioEngine:
                             try:
                                 # Try to convert to bytes if possible
                                 return bytes(cover_item)
-                            except Exception:
+                            except (TypeError, ValueError):
                                 continue
                 # If all fails, try with the first item directly
                 if cover_data_list:
@@ -405,7 +405,7 @@ class AudioEngine:
                 pic = Picture(picture_data)
                 return pic.data
 
-        except Exception as e:
+        except (KeyError, AttributeError, ValueError, TypeError, OSError) as e:
             logger.error(f"Error extracting album art: {e}")
             return None
 
@@ -433,7 +433,7 @@ class AudioEngine:
                     # Read the image file and return its binary data
                     with open(album_art_file, "rb") as f:
                         return f.read()
-                except Exception as e:
+                except OSError as e:
                     logger.error(f"Error reading album art file {album_art_file}: {e}")
 
         return None
@@ -797,7 +797,7 @@ class AudioEngine:
                         self.playback_callback(pos_copy, self.duration)
 
                     last_callback_time[0] = current_time
-                except Exception as e:
+                except (RuntimeError, TypeError) as e:
                     logger.error(f"Error in audio callbacks: {e}")
 
             # Copy to output buffer
@@ -887,7 +887,7 @@ class AudioEngine:
                     if start_idx >= total_samples:
                         break
 
-        except Exception as e:
+        except (OSError, RuntimeError, ValueError) as e:
             logger.error(f"Error in audio playback: {e}")
 
         finally:

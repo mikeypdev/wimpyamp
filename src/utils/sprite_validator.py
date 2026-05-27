@@ -27,8 +27,8 @@ def validate_sprite_in_bmp(bmp_path, x, y, w, h):
             img_width, img_height = img.size
             # Check if the sprite coordinates are within bounds
             return (x + w <= img_width) and (y + h <= img_height)
-    except Exception:
-        # If we can't open the image, assume the sprite doesn't exist
+    except (OSError, ValueError) as e:
+        logger.debug(f"Cannot open image {bmp_path}: {e}")
         return False
 
 
@@ -61,6 +61,6 @@ def get_available_sprites_from_sheet(sheet_path, spec_sprites):
                 available_sprites[sprite_id] = sprite_def
 
         return available_sprites
-    except Exception:
-        # If we can't process the image, return an empty dict
+    except (OSError, ValueError) as e:
+        logger.debug(f"Cannot process image {sheet_path}: {e}")
         return {}

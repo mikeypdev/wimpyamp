@@ -2,6 +2,7 @@ from collections import OrderedDict
 from PySide6.QtGui import QPixmap, QImage, QColor, QPainter
 from PySide6.QtCore import Qt
 from PIL import Image
+import numpy as np
 from ..utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -31,21 +32,16 @@ class SpriteManager:
             if image_path.lower().endswith(".cur"):
                 full_pixmap = QPixmap(image_path)
                 if full_pixmap.isNull():
-                    raise Exception(f"QPixmap failed to load .cur file: {image_path}")
+                    raise OSError(f"QPixmap failed to load .cur file: {image_path}")
 
                 cropped_pixmap = full_pixmap.copy(x, y, w, h)
 
                 if transparency_color:
-                    q_image = cropped_pixmap.toImage()
-                    for i in range(q_image.width()):
-                        for j in range(q_image.height()):
-                            pixel_color = q_image.pixelColor(i, j)
-                            if (
-                                pixel_color.red(),
-                                pixel_color.green(),
-                                pixel_color.blue(),
-                            ) == transparency_color:
-                                q_image.setPixelColor(i, j, QColor(0, 0, 0, 0))
+                    q_image = cropped_pixmap.toImage().convertToFormat(QImage.Format_ARGB32)
+                    mask = q_image.createMaskFromColor(
+                        QColor(*transparency_color).rgb(), Qt.MaskOutColor
+                    )
+                    q_image.setAlphaChannel(mask)
                     pixmap = QPixmap.fromImage(q_image)
                 else:
                     pixmap = cropped_pixmap
@@ -63,20 +59,23 @@ class SpriteManager:
                 )
 
                 if q_image.isNull():
-                    raise Exception(
+                    raise OSError(
                         f"QImage failed to load from PIL Image for {image_path}"
                     )
 
                 if transparency_color:
-                    for i in range(q_image.width()):
-                        for j in range(q_image.height()):
-                            pixel_color = q_image.pixelColor(i, j)
-                            if (
-                                pixel_color.red(),
-                                pixel_color.green(),
-                                pixel_color.blue(),
-                            ) == transparency_color:
-                                q_image.setPixelColor(i, j, QColor(0, 0, 0, 0))
+                    arr = np.array(rgba_pil_image)
+                    r, g, b = transparency_color
+                    match = (arr[:, :, 0] == r) & (arr[:, :, 1] == g) & (arr[:, :, 2] == b)
+                    arr[match, 3] = 0
+                    rgba_pil_image = Image.fromarray(arr, "RGBA")
+
+                    q_image = QImage(
+                        rgba_pil_image.tobytes("raw", "RGBA"),
+                        rgba_pil_image.width,
+                        rgba_pil_image.height,
+                        QImage.Format_RGBA8888,
+                    )
                     q_image = q_image.convertToFormat(QImage.Format_ARGB32)
 
                 pixmap = QPixmap(q_image.size())
@@ -88,7 +87,7 @@ class SpriteManager:
             self.cache[cache_key] = pixmap
             self._evict_if_needed()
             return pixmap
-        except Exception as e:
+        except (OSError, ValueError, RuntimeError) as e:
             logger.error(f"Error loading sprite from {image_path}: {e}")
             return QPixmap()
 
