@@ -296,7 +296,7 @@ class PlaylistWindow(PlaylistInputMixin, PlaylistRendererMixin, QWidget):
         ):
             try:
                 return self.main_window.audio_engine.get_metadata()
-            except Exception:
+            except (AttributeError, TypeError):
                 pass
 
         return load_metadata_for_file(filepath)
@@ -349,7 +349,7 @@ class PlaylistWindow(PlaylistInputMixin, PlaylistRendererMixin, QWidget):
                         self.playlist_normal_text_color = QColor(line.split("=")[1])
                     elif line.startswith("Current="):
                         self.playlist_current_text_color = QColor(line.split("=")[1])
-        except Exception as e:
+        except (OSError, ValueError, IndexError) as e:
             logger.error(f"Error parsing pledit.txt: {e}. Using default settings.")
 
     def _load_pledit_colors(self):
@@ -504,7 +504,7 @@ class PlaylistWindow(PlaylistInputMixin, PlaylistRendererMixin, QWidget):
                     else:
                         # Could not get duration with mutagen
                         self._track_durations_cache[filepath] = 0.0
-                except Exception:
+                except (OSError, AttributeError, ImportError):
                     # If we can't get the duration, skip this track and cache as 0
                     self._track_durations_cache[filepath] = 0.0
                     continue
@@ -1049,7 +1049,7 @@ class PlaylistWindow(PlaylistInputMixin, PlaylistRendererMixin, QWidget):
                     "channels": 0,
                     "length": 0.0,
                 }
-        except Exception as e:
+        except (OSError, AttributeError, ImportError) as e:
             logger.error(f"Error getting technical info: {e}")
             technical_info = {
                 "format": "Unknown",
@@ -1193,7 +1193,7 @@ class PlaylistWindow(PlaylistInputMixin, PlaylistRendererMixin, QWidget):
                     comments_label.setWordWrap(True)
                     layout.addWidget(comments_label)
 
-        except Exception as e:
+        except (OSError, AttributeError, KeyError, TypeError, ImportError) as e:
             logger.error(f"Error getting additional metadata: {e}")
 
         layout.addWidget(QLabel(""))

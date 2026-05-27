@@ -278,7 +278,7 @@ class AlbumArtWindow(QWidget):
                 else:
                     # Embedded image data is corrupted
                     logger.warning(f"Warning: Corrupted embedded album art in {current_file_path}")
-            except Exception as e:
+            except (OSError, ValueError, RuntimeError) as e:
                 # Error occurred while loading embedded art
                 logger.error(f"Error loading embedded album art from {current_file_path}: {e}")
 
@@ -320,7 +320,7 @@ class AlbumArtWindow(QWidget):
             else:
                 # Default image file is missing
                 logger.warning(f"Warning: Default album art image not found: {default_art_path}")
-        except Exception as e:
+        except (OSError, ValueError, RuntimeError) as e:
             # Error occurred while loading default image
             logger.error(f"Error loading default album art: {e}")
 
@@ -374,7 +374,7 @@ class AlbumArtWindow(QWidget):
                 # File exists but image is corrupted
                 logger.warning(f"Warning: Corrupted image file: {file_path}")
                 return False
-        except Exception as e:
+        except (OSError, ValueError, RuntimeError) as e:
             # Error occurred while loading the image
             logger.error(f"Error loading image file {file_path}: {e}")
             return False

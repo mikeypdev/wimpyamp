@@ -12,6 +12,18 @@ from ..utils.logger import get_logger
 
 
 class Renderer:
+    MAIN_WINDOW_W = 275
+    MAIN_WINDOW_H = 116
+    CLUTTERBAR_NORMAL = (304, 0)
+    CLUTTERBAR_PRESSED = {
+        "CLUTTERBAR_OPTIONS_PRESSED": (304, 44),
+        "CLUTTERBAR_ALWAYS_ON_TOP_PRESSED": (312, 44),
+        "CLUTTERBAR_FILE_INFO_PRESSED": (320, 44),
+        "CLUTTERBAR_DOUBLE_SIZE_PRESSED": (328, 44),
+        "CLUTTERBAR_VISUALIZATION_PRESSED": (336, 44),
+    }
+    CLUTTERBAR_SIZE = (8, 43)
+    CLUTTERBAR_DEST = (10, 22)
     def __init__(self, parent_widget):
         self.parent_widget = parent_widget
         self.sprite_manager = SpriteManager()
@@ -170,8 +182,8 @@ class Renderer:
                 main_bmp_path,
                 0,
                 0,
-                275,
-                116,
+                self.MAIN_WINDOW_W,
+                self.MAIN_WINDOW_H,
                 transparency_color=MAGENTA_TRANSPARENCY_RGB,
             )
             painter.drawPixmap(0, 0, background_pixmap)
@@ -200,29 +212,21 @@ class Renderer:
 
         titlebar_bmp_path = self.skin_data.get_path("titlebar.bmp")
         if titlebar_bmp_path and os.path.exists(titlebar_bmp_path):
-            sprite_x, sprite_y = 304, 0
-            if sprite_id == "CLUTTERBAR_NORMAL":
-                sprite_x, sprite_y = 304, 0
-            elif sprite_id == "CLUTTERBAR_OPTIONS_PRESSED":
-                sprite_x, sprite_y = 304, 44
-            elif sprite_id == "CLUTTERBAR_ALWAYS_ON_TOP_PRESSED":
-                sprite_x, sprite_y = 312, 44
-            elif sprite_id == "CLUTTERBAR_FILE_INFO_PRESSED":
-                sprite_x, sprite_y = 320, 44
-            elif sprite_id == "CLUTTERBAR_DOUBLE_SIZE_PRESSED":
-                sprite_x, sprite_y = 328, 44
-            elif sprite_id == "CLUTTERBAR_VISUALIZATION_PRESSED":
-                sprite_x, sprite_y = 336, 44
+            sprite_x, sprite_y = self.CLUTTERBAR_NORMAL
+            if sprite_id in self.CLUTTERBAR_PRESSED:
+                sprite_x, sprite_y = self.CLUTTERBAR_PRESSED[sprite_id]
 
+            cw, ch = self.CLUTTERBAR_SIZE
             clutterbar_pixmap = self.sprite_manager.load_sprite(
                 titlebar_bmp_path,
                 sprite_x,
                 sprite_y,
-                8,
-                43,
+                cw,
+                ch,
                 transparency_color=MAGENTA_TRANSPARENCY_RGB,
             )
-            painter.drawPixmap(10, 22, clutterbar_pixmap)
+            dx, dy = self.CLUTTERBAR_DEST
+            painter.drawPixmap(dx, dy, clutterbar_pixmap)
 
     def _render_transport_buttons(self, painter: QPainter, ui_state: UIState):
         main_window_spec = self.skin_data.spec_json["destinations"]["main_window"]

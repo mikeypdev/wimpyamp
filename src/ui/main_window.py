@@ -8,6 +8,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QPainter, QKeySequence, QShortcut, QAction, QFileOpenEvent
 from PySide6.QtCore import Qt, QPoint, QRect, QTimer, QDir
 import os
+import queue
 
 from ..core.skin_parser import SkinParser
 from ..core.renderer import Renderer
@@ -24,7 +25,7 @@ from .docking import DockingMixin
 
 from ..audio.audio_engine import AudioEngine
 
-from PySide6.QtWidgets import QMessageBox
+from PySide6.QtWidgets import QMessageBox, QLabel
 
 from ..utils.logger import get_logger
 
@@ -32,6 +33,9 @@ logger = get_logger(__name__)
 
 
 class MainWindow(DockingMixin, QWidget):
+    CLOSE_BUTTON_RECT = (264, 3, 9, 9)
+    TITLEBAR_HEIGHT = 14
+    CLUTTERBAR_RECT = (8, 22, 12, 43)
     def __init__(self):
         super().__init__()
         self.setWindowTitle("WimPyAmp Music Player")
@@ -674,23 +678,199 @@ class MainWindow(DockingMixin, QWidget):
         self.renderer.render(painter, self.ui_state)
         painter.end()
 
+    def _handle_area_press(self, area_key, event):
+        """Handle press on a spec-defined area. Returns True if handled."""
+        spec = self.skin_data.spec_json
+        area_spec = spec["destinations"]["main_window"]["areas"].get(area_key)
+        if not area_spec:
+            return False
+        rect = QRect(area_spec["x"], area_spec["y"], area_spec["w"], area_spec["h"])
+        if not rect.contains(event.pos()):
+            return False
+
+        handlers = {
+            "volume_slider": self._handle_volume_press,
+            "balance_slider": self._handle_balance_press,
+            "position_track": self._handle_position_press,
+            "playlist_button": self._handle_playlist_button_press,
+            "eq_button": self._handle_eq_button_press,
+            "shuffle_dest": self._handle_shuffle_press,
+            "repeat_dest": self._handle_repeat_press,
+            "eject": self._handle_eject_press,
+        }
+        handler = handlers.get(area_key)
+        if handler:
+            handler(event)
+            return True
+        return False
+
+    def _handle_volume_press(self, event):
+        self.ui_state.is_volume_dragged = True
+        self._update_volume_from_mouse(event.pos())
+
+    def _handle_balance_press(self, event):
+        self.ui_state.is_balance_dragged = True
+        self._update_balance_from_mouse(event.pos())
+
+    def _handle_position_press(self, event):
+        self.ui_state.dragging_position = True
+        self._update_position_from_mouse(event.pos())
+
+    def _handle_playlist_button_press(self, event):
+        if self.ui_state.playlist_button_on:
+            self.hide_playlist_window()
+        else:
+            self.show_playlist_window()
+
+    def _handle_eq_button_press(self, event):
+        if self.ui_state.eq_button_on:
+            self.hide_equalizer_window()
+        else:
+            self.show_equalizer_window()
+
+    def _handle_shuffle_press(self, event):
+        self.ui_state.shuffle_on = not self.ui_state.shuffle_on
+        self.ui_state.is_shuffle_pressed = True
+        self.update()
+
+    def _handle_repeat_press(self, event):
+        self.ui_state.repeat_on = not self.ui_state.repeat_on
+        self.ui_state.is_repeat_pressed = True
+        self.update()
+
+    def _handle_eject_press(self, event):
+        self.ui_state.is_eject_pressed = True
+        self.update()
+        QApplication.processEvents()
+        default_music_path = self.preferences.get_default_music_path()
+        initial_path = default_music_path if default_music_path else ""
+
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Open Audio File",
+            initial_path,
+            "Audio Files (*.mp3 *.wav *.ogg *.flac *.m4a *.aac *.opus *.aiff *.au);;All Files (*)",
+        )
+
+        self.ui_state.is_eject_pressed = False
+
+        if file_path:
+            if self.audio_engine.load_track(file_path):
+                self.playlist = [file_path]
+                self.current_track_index = 0
+                self.update_playlist_display()
+                metadata = self.audio_engine.get_metadata()
+                if metadata:
+                    self.ui_state.current_track_title = f"{metadata.get('artist', 'Unknown')} - {metadata.get('title', 'Unknown')}"
+                else:
+                    self.ui_state.current_track_title = os.path.basename(file_path)
+                self.audio_engine.play()
+                self.playlist_window.set_current_track_index(0)
+                if hasattr(self, "album_art_window") and self.album_art_window.isVisible():
+                    self.album_art_window.refresh_album_art(self.audio_engine)
+                if hasattr(self, "mac_media_integration") and self.mac_media_integration:
+                    self.mac_media_integration.update_now_playing_info()
+                    self.mac_media_integration.update_playback_state()
+            else:
+                self.ui_state.current_track_title = "Error loading track"
+        self.update()
+
+    def _handle_control_press(self, control):
+        name = control["name"]
+        if name == "previous":
+            self.ui_state.is_previous_pressed = True
+            self.play_previous_track()
+            self.update()
+        elif name == "play":
+            self.ui_state.is_play_pressed = True
+            self.ui_state.is_pause_pressed = False
+            if not self.playlist:
+                if not self.audio_engine.is_playing or self.audio_engine.is_paused:
+                    self.audio_engine.play()
+                self.update()
+                return
+            selected_track_index = self.playlist_window.get_selected_track_index()
+            if selected_track_index == -1:
+                selected_track_index = 0
+            self.play_track_at_index(selected_track_index)
+            self.update()
+        elif name == "pause":
+            self.ui_state.is_pause_pressed = True
+            if self.audio_engine.is_playing:
+                self.audio_engine.pause()
+            elif self.audio_engine.is_paused:
+                self.audio_engine.play()
+                if self.album_art_window.isVisible():
+                    self.album_art_window.refresh_album_art(self.audio_engine)
+            self.update()
+        elif name == "stop":
+            self.ui_state.is_stop_pressed = True
+            self.audio_engine.stop()
+            self.ui_state.position = 0.0
+            self.current_track_path = None
+            self.ui_state.is_play_pressed = False
+            self.ui_state.is_pause_pressed = False
+            if hasattr(self, "playlist_window") and self.playlist_window:
+                self.playlist_window.set_current_track_index(self.current_track_index)
+            self.update()
+        elif name == "next":
+            self.ui_state.is_next_pressed = True
+            self.play_next_track()
+            self.update()
+
+    def _handle_clutterbar_press(self, pos):
+        y_pos = pos.y() - 22
+        button_height = 43 / 5
+
+        if 0 <= y_pos < button_height:
+            button_index = 0
+        elif button_height <= y_pos < 2 * button_height:
+            button_index = 1
+        elif 2 * button_height <= y_pos < 3 * button_height:
+            button_index = 2
+        elif 3 * button_height <= y_pos < 4 * button_height:
+            button_index = 3
+        elif 4 * button_height <= y_pos < 43:
+            button_index = 4
+        else:
+            return
+
+        if button_index == 0:
+            self.ui_state.is_options_pressed = True
+            self.show_skin_selection_dialog()
+        elif button_index == 1:
+            self.ui_state.is_always_on_top_pressed = True
+        elif button_index == 2:
+            if self.ui_state.album_art_visible:
+                self.hide_album_art_window()
+            else:
+                self.show_album_art_window()
+        elif button_index == 3:
+            self.ui_state.is_double_size_pressed = True
+        elif button_index == 4:
+            self.ui_state.is_visualization_menu_pressed = True
+            vis_mode = self.renderer.get_visualization_mode()
+            if vis_mode == "SPECTRUM":
+                new_vis_mode = "OSCILLOSCOPE"
+            elif vis_mode == "OSCILLOSCOPE":
+                new_vis_mode = "OFF"
+            else:
+                new_vis_mode = "SPECTRUM"
+            self.renderer.set_visualization_mode(new_vis_mode)
+            self.audio_engine.set_visualization_mode(new_vis_mode)
+        self.update()
+
     def mousePressEvent(self, event):
         # Bring all windows to foreground when any part of the main window is clicked
         self.bring_all_windows_to_foreground()
 
         if event.button() == Qt.LeftButton:
-            # Check for close button first (before titlebar dragging, since it's in the titlebar area)
-            # Close button is at (264, 3) with size (9, 9) in the titlebar area
-            close_button_rect = QRect(264, 3, 9, 9)
+            close_button_rect = QRect(*self.CLOSE_BUTTON_RECT)
             if close_button_rect.contains(event.pos()):
-                # Quit the application when close button is clicked
-                # Use the proper close event handling to ensure audio engine cleanup
                 self.close()
                 return
 
-            # Check if click is on titlebar for window dragging
-            # Titlebar is at the top of the window, typically 14 pixels high
-            titlebar_rect = QRect(0, 0, self.width(), 14)
+            titlebar_rect = QRect(0, 0, self.width(), self.TITLEBAR_HEIGHT)
             if titlebar_rect.contains(event.pos()):
                 self._dragging_window = True
                 self._drag_start_position = (
@@ -698,336 +878,33 @@ class MainWindow(DockingMixin, QWidget):
                 )
                 return
 
+            # Spec-driven area dispatch
+            spec_areas = [
+                "volume_slider", "balance_slider", "position_track",
+                "playlist_button", "eq_button", "shuffle_dest",
+                "repeat_dest", "eject",
+            ]
+            for area_key in spec_areas:
+                if self._handle_area_press(area_key, event):
+                    return
+
+            # Control buttons (prev/play/pause/stop/next)
             spec = self.skin_data.spec_json
             main_window_areas = spec["destinations"]["main_window"]["areas"]
-
-            # Check for Volume Slider interaction
-            volume_area_spec = main_window_areas["volume_slider"]
-            volume_rect = QRect(
-                volume_area_spec["x"],
-                volume_area_spec["y"],
-                volume_area_spec["w"],
-                volume_area_spec["h"],
-            )
-            if volume_rect.contains(event.pos()):
-                self.ui_state.is_volume_dragged = True
-                self._update_volume_from_mouse(event.pos())
-                return
-
-            # Check for Balance Slider interaction
-            balance_area_spec = main_window_areas[
-                "balance_slider"
-            ]  # Use balance_slider area per spec
-            balance_rect = QRect(
-                balance_area_spec["x"],
-                balance_area_spec["y"],
-                balance_area_spec["w"],
-                balance_area_spec["h"],
-            )
-            if balance_rect.contains(event.pos()):
-                self.ui_state.is_balance_dragged = True
-                self._update_balance_from_mouse(event.pos())
-                return
-
-            # Check for Position Bar interaction
-            position_area_spec = main_window_areas["position_track"]
-            position_rect = QRect(
-                position_area_spec["x"],
-                position_area_spec["y"],
-                position_area_spec["w"],
-                position_area_spec["h"],
-            )
-            if position_rect.contains(event.pos()):
-                self.ui_state.dragging_position = True
-                self._update_position_from_mouse(event.pos())
-                return
-
-            # Check for Playlist Button interaction
-            playlist_button_area_spec = main_window_areas["playlist_button"]
-            playlist_button_rect = QRect(
-                playlist_button_area_spec["x"],
-                playlist_button_area_spec["y"],
-                playlist_button_area_spec["w"],
-                playlist_button_area_spec["h"],
-            )
-            if playlist_button_rect.contains(event.pos()):
-                # Toggle playlist window using centralized method
-                if self.ui_state.playlist_button_on:
-                    self.hide_playlist_window()
-                else:
-                    self.show_playlist_window()
-
-                return
-
-            # Check for EQ Button interaction
-            eq_button_area_spec = main_window_areas["eq_button"]
-            eq_button_rect = QRect(
-                eq_button_area_spec["x"],
-                eq_button_area_spec["y"],
-                eq_button_area_spec["w"],
-                eq_button_area_spec["h"],
-            )
-            if eq_button_rect.contains(event.pos()):
-                # Toggle equalizer window using centralized method
-                if self.ui_state.eq_button_on:
-                    self.hide_equalizer_window()
-                else:
-                    self.show_equalizer_window()
-
-                return
-
-            # Check for Shuffle Button interaction
-            shuffle_area_spec = main_window_areas["shuffle_dest"]
-            shuffle_rect = QRect(
-                shuffle_area_spec["x"],
-                shuffle_area_spec["y"],
-                shuffle_area_spec["w"],
-                shuffle_area_spec["h"],
-            )
-            if shuffle_rect.contains(event.pos()):
-                self.ui_state.shuffle_on = not self.ui_state.shuffle_on
-                self.ui_state.is_shuffle_pressed = True
-                self.update()
-                return
-
-            # Check for Repeat Button interaction
-            repeat_area_spec = main_window_areas["repeat_dest"]
-            repeat_rect = QRect(
-                repeat_area_spec["x"],
-                repeat_area_spec["y"],
-                repeat_area_spec["w"],
-                repeat_area_spec["h"],
-            )
-            if repeat_rect.contains(event.pos()):
-                self.ui_state.repeat_on = not self.ui_state.repeat_on
-                self.ui_state.is_repeat_pressed = True
-                self.update()
-                return
-
-            # Check for control buttons interaction
             controls = main_window_areas["controls"]
             for control in controls:
                 control_rect = QRect(
                     control["dest_x"], control["dest_y"], control["w"], control["h"]
                 )
                 if control_rect.contains(event.pos()):
-                    if control["name"] == "previous":
-                        self.ui_state.is_previous_pressed = True
-                        # Trigger previous track in playlist
-                        self.play_previous_track()
-                        self.update()
-                        return
-                    elif control["name"] == "play":
-                        self.ui_state.is_play_pressed = True
-                        self.ui_state.is_pause_pressed = False  # Reset pause state
-
-                        # If playlist is empty, just start playback if track is loaded
-                        if not self.playlist:
-                            if (
-                                not self.audio_engine.is_playing
-                                or self.audio_engine.is_paused
-                            ):
-                                self.audio_engine.play()
-                            self.update()
-                            return
-
-                        # Get the selected track from the playlist window
-                        selected_track_index = (
-                            self.playlist_window.get_selected_track_index()
-                        )
-
-                        # If no track is selected, use the first track in the playlist
-                        if selected_track_index == -1:
-                            selected_track_index = 0
-
-                        # Play the selected track (or first track if none selected)
-                        self.play_track_at_index(selected_track_index)
-                        self.update()
-                        return
-                    elif control["name"] == "pause":
-                        self.ui_state.is_pause_pressed = True
-                        # Toggle pause via audio engine
-
-                        if self.audio_engine.is_playing:
-                            self.audio_engine.pause()
-                        elif self.audio_engine.is_paused:
-                            self.audio_engine.play()
-                            # Refresh album art if the window is visible and we're now playing
-                            if self.album_art_window.isVisible():
-                                self.album_art_window.refresh_album_art(
-                                    self.audio_engine
-                                )
-                        self.update()
-                        return
-                    elif control["name"] == "stop":
-                        self.ui_state.is_stop_pressed = True
-                        # Stop playback via audio engine
-                        self.audio_engine.stop()
-                        self.ui_state.position = 0.0  # Reset position visually
-                        # Clear current track path but preserve the index so the same track can be restarted
-                        self.current_track_path = None
-                        # Update play/pause/stop states
-                        self.ui_state.is_play_pressed = False
-                        self.ui_state.is_pause_pressed = False
-                        # Make sure the playlist window knows which track was playing so it can be restarted
-                        if hasattr(self, "playlist_window") and self.playlist_window:
-                            self.playlist_window.set_current_track_index(
-                                self.current_track_index
-                            )
-                        self.update()
-                        return
-                    elif control["name"] == "next":
-                        self.ui_state.is_next_pressed = True
-                        # Trigger next track in playlist
-                        self.play_next_track()
-                        self.update()
-                        return
-                    self.update()
+                    self._handle_control_press(control)
                     return
 
-            # Check for Eject Button interaction
-            eject_area_spec = main_window_areas["eject"]
-            eject_rect = QRect(
-                eject_area_spec["x"],
-                eject_area_spec["y"],
-                eject_area_spec["w"],
-                eject_area_spec["h"],
-            )
-            if eject_rect.contains(event.pos()):
-                self.ui_state.is_eject_pressed = True
-                self.update()  # Force repaint to show pressed state immediately
-                # Process pending events to ensure UI updates before showing dialog
-                QApplication.processEvents()
-                # Open file dialog to load a track
-                # Use default music path from preferences if available, otherwise use empty string
-                default_music_path = self.preferences.get_default_music_path()
-                initial_path = default_music_path if default_music_path else ""
-
-                file_path, _ = QFileDialog.getOpenFileName(
-                    self,
-                    "Open Audio File",
-                    initial_path,
-                    "Audio Files (*.mp3 *.wav *.ogg *.flac *.m4a *.aac *.opus *.aiff *.au);;All Files (*)",
-                )
-
-                # Always reset the eject button pressed state after dialog closes
-                # regardless of whether a file was selected or dialog was cancelled
-                self.ui_state.is_eject_pressed = False
-
-                if file_path:
-                    # Add to playlist and play immediately
-                    if self.audio_engine.load_track(file_path):
-                        # For single file loading via eject, create a new playlist with just this file
-                        self.playlist = [file_path]
-                        self.current_track_index = 0
-
-                        # Update the playlist window display
-                        self.update_playlist_display()
-
-                        # Update the current track title
-                        metadata = self.audio_engine.get_metadata()
-                        if metadata:
-                            # Format as "artist - song title" for display
-                            self.ui_state.current_track_title = f"{metadata.get('artist', 'Unknown')} - {metadata.get('title', 'Unknown')}"
-                        else:
-                            self.ui_state.current_track_title = os.path.basename(
-                                file_path
-                            )
-
-                        # Start playback
-                        self.audio_engine.play()
-
-                        # Update playlist window to show currently playing track
-                        self.playlist_window.set_current_track_index(0)
-
-                        # Refresh album art if the window is visible
-                        if (
-                            hasattr(self, "album_art_window")
-                            and self.album_art_window.isVisible()
-                        ):
-                            self.album_art_window.refresh_album_art(self.audio_engine)
-
-                        # Update macOS media integration with new track info
-                        if (
-                            hasattr(self, "mac_media_integration")
-                            and self.mac_media_integration
-                        ):
-                            self.mac_media_integration.update_now_playing_info()
-                            self.mac_media_integration.update_playback_state()
-                    else:
-                        self.ui_state.current_track_title = "Error loading track"
-
-                self.update()  # Repaint main window if button state changes visually
-                return
-
-            # Check for Clutterbar buttons interaction (O, A, I, D, V)
-            # The clutterbar is a clickable 8x43 rectangle at position (10, 22)
-            # Expand the clickable area to make it easier to click (add some horizontal buffer)
-            clutterbar_rect = QRect(
-                8, 22, 12, 43
-            )  # Expand from 8 to 12 pixels wide with 2px buffer on each side
+            # Clutterbar buttons (O, A, I, D, V)
+            clutterbar_rect = QRect(*self.CLUTTERBAR_RECT)
             if clutterbar_rect.contains(event.pos()):
-                # Calculate which button was pressed based on Y coordinate
-                y_pos = event.pos().y() - 22  # Relative to clutterbar top
-
-                # More precise calculation: divide 43 pixels into 5 equal sections
-                # Each button has height of 43/5 = 8.6 pixels
-                # Define exact boundaries to avoid floating point issues
-                button_height = 43 / 5  # 8.6 pixels per button
-
-                # Calculate which button was clicked based on precise boundaries
-                if 0 <= y_pos < button_height:  # Button 0 (Options)
-                    button_index = 0
-                elif (
-                    button_height <= y_pos < 2 * button_height
-                ):  # Button 1 (Always on Top)
-                    button_index = 1
-                elif (
-                    2 * button_height <= y_pos < 3 * button_height
-                ):  # Button 2 (File Info)
-                    button_index = 2
-                elif (
-                    3 * button_height <= y_pos < 4 * button_height
-                ):  # Button 3 (Double Size)
-                    button_index = 3
-                elif 4 * button_height <= y_pos < 43:  # Button 4 (Visualization)
-                    button_index = 4
-                else:
-                    button_index = -1  # Outside any button
-
-                if 0 <= button_index < 5:
-                    # Set the appropriate button pressed state
-                    if button_index == 0:  # 'O' - Options Menu
-                        self.ui_state.is_options_pressed = True
-                        self.show_skin_selection_dialog()
-                    elif button_index == 1:  # 'A' - Always on Top
-                        self.ui_state.is_always_on_top_pressed = True
-                    elif button_index == 2:  # 'I' - File Info / Album Art
-                        # Toggle album art window using centralized method
-                        if self.ui_state.album_art_visible:
-                            self.hide_album_art_window()
-                        else:
-                            self.show_album_art_window()
-
-                    elif button_index == 3:  # 'D' - Double Size
-                        self.ui_state.is_double_size_pressed = True
-                    elif button_index == 4:  # 'V' - Visualization Menu
-                        self.ui_state.is_visualization_menu_pressed = True
-                        # Cycle through visualization modes: SPECTRUM -> OSCILLOSCOPE -> OFF -> SPECTRUM
-                        vis_mode = self.renderer.get_visualization_mode()
-                        if vis_mode == "SPECTRUM":
-                            new_vis_mode = "OSCILLOSCOPE"
-                        elif vis_mode == "OSCILLOSCOPE":
-                            new_vis_mode = "OFF"
-                        else:  # OFF or any other state
-                            new_vis_mode = "SPECTRUM"
-
-                        # Update the renderer with the new visualization mode
-                        self.renderer.set_visualization_mode(new_vis_mode)
-                        # Also update the audio engine with the new visualization mode
-                        self.audio_engine.set_visualization_mode(new_vis_mode)
-                    self.update()
-                    return
+                self._handle_clutterbar_press(event.pos())
+                return
 
         # Hot-about (Winamp info) clickable area
         try:
@@ -1042,7 +919,6 @@ class MainWindow(DockingMixin, QWidget):
                     hot_about_spec["h"],
                 )
                 if hot_about_rect.contains(event.pos()):
-                    # Use app-level handler if available, otherwise show QMessageBox directly
                     try:
                         app = QApplication.instance()
                         if hasattr(app, "_show_about_dialog"):
@@ -1053,11 +929,10 @@ class MainWindow(DockingMixin, QWidget):
                                 "About WimPyAmp",
                                 "WimPyAmp\n\nVersion: 0.0.0\n\nA lightweight Winamp-style music player.\n\n© WimPyAmp Project",
                             )
-                    except Exception:
+                    except (AttributeError, RuntimeError):
                         QMessageBox.about(self, "About WimPyAmp", "WimPyAmp")
                     return
-        except Exception:
-            # If anything goes wrong while checking hot_about, fall back to default handling
+        except (KeyError, TypeError, AttributeError):
             pass
 
         super().mousePressEvent(event)
@@ -1329,7 +1204,7 @@ class MainWindow(DockingMixin, QWidget):
             # Repaint the window with the new skin
             self.update()
 
-        except Exception as e:
+        except (OSError, ValueError, KeyError, TypeError, AttributeError) as e:
             logger.error(f"Failed to load new skin: {e}")
 
     def show_skin_selection_dialog(self):
@@ -1365,7 +1240,7 @@ class MainWindow(DockingMixin, QWidget):
                     vis_data = self.audio_engine.vis_data_queue.get_nowait()
                     # Update the renderer with the visualization data
                     self.renderer.update_visualization_data(vis_data)
-            except Exception:
+            except queue.Empty:
                 # Queue is empty, which is fine
                 pass
 
@@ -1396,7 +1271,7 @@ class MainWindow(DockingMixin, QWidget):
             # Stop key
             stop_shortcut = QShortcut(QKeySequence("Media Stop"), self)
             stop_shortcut.activated.connect(self._handle_stop_action)
-        except Exception:
+        except (RuntimeError, TypeError):
             # If Media keys are not supported on this system, just use space bar as primary control
             logger.info("Media keys not supported on this system, use Space bar for play/pause")
 
@@ -1724,7 +1599,7 @@ class MainWindow(DockingMixin, QWidget):
                 logger.info("No valid file paths found in playlist file")
                 return False
 
-        except Exception as e:
+        except (OSError, UnicodeDecodeError, ValueError) as e:
             logger.error(f"Error loading playlist file {playlist_file_path}: {str(e)}")
             return False
 
@@ -1924,7 +1799,7 @@ def main():
                     else:
                         # Fallback: just close the main window
                         self.main_window.close()
-                except Exception:
+                except (RuntimeError, AttributeError):
                     # If anything goes wrong, just quit the app
                     pass
             else:
@@ -1967,7 +1842,7 @@ def main():
                     if os.path.exists(version_path):
                         with open(version_path, "r") as vf:
                             version = vf.read().strip() or version
-            except Exception:
+            except (OSError, AttributeError):
                 pass
 
             about_html = (
