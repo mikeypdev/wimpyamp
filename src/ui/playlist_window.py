@@ -767,8 +767,6 @@ class PlaylistWindow(PlaylistInputMixin, PlaylistRendererMixin, QWidget):
         for i, item in enumerate(self.playlist_items):
             # Extract the actual track name after the number prefix (e.g., "1. Song Name" -> "Song Name")
             # Look for pattern like "X. " where X is any number
-            import re
-
             # This regex will match the pattern "number. " at the beginning
             match = re.match(r"^\d+\.\s*(.*)", item)
             track_content = match.group(1) if match else item
@@ -934,8 +932,6 @@ class PlaylistWindow(PlaylistInputMixin, PlaylistRendererMixin, QWidget):
             parts = item.split(". ", 1)
             title = parts[1] if len(parts) > 1 else item
             # Get just the filename part (remove path if present)
-            import os
-
             return os.path.basename(title).lower()
 
         indexed_items = [
@@ -1060,8 +1056,6 @@ class PlaylistWindow(PlaylistInputMixin, PlaylistRendererMixin, QWidget):
             }
 
         # Get file size
-        import os
-
         try:
             file_size = os.path.getsize(filepath)
             file_size_mb = file_size / (1024 * 1024)  # Convert to MB

@@ -5,6 +5,19 @@ from ..utils.region_utils import apply_region_mask_to_widget
 class DockingMixin:
     """Mixin providing window docking and snapping logic for MainWindow."""
 
+    def _get_visible_floating_windows(self, exclude_window=None, require_visible=True):
+        windows = []
+        for attr in ("playlist_window", "equalizer_window", "album_art_window"):
+            win = getattr(self, attr, None)
+            if win is None:
+                continue
+            if exclude_window is not None and win == exclude_window:
+                continue
+            if require_visible and not win.isVisible():
+                continue
+            windows.append(win)
+        return windows
+
     def _recalculate_docking_states(self):
         """Recalculate docking states for all floating windows after loading positions.
 
@@ -12,14 +25,7 @@ class DockingMixin:
         equalizer, album art) based on their proximity to main window and each other,
         ensuring proper docked state when positions are loaded from preferences.
         """
-        # Create a list of all floating windows to check for docking
-        floating_windows = []
-        if hasattr(self, "playlist_window") and self.playlist_window:
-            floating_windows.append(self.playlist_window)
-        if hasattr(self, "equalizer_window") and self.equalizer_window:
-            floating_windows.append(self.equalizer_window)
-        if hasattr(self, "album_art_window") and self.album_art_window:
-            floating_windows.append(self.album_art_window)
+        floating_windows = self._get_visible_floating_windows(require_visible=False)
 
         # For each floating window, check if it should be considered docked
         for window in floating_windows:
@@ -230,31 +236,7 @@ class DockingMixin:
         potential_snaps = []
 
         # Check for snapping to other windows (main window and floating windows)
-        # Create a list of potential target windows
-        target_windows = [self]  # Always check main window
-
-        # Add other floating windows if they exist and are visible
-        if (
-            hasattr(self, "playlist_window")
-            and self.playlist_window
-            and self.playlist_window.isVisible()
-        ):
-            if self.playlist_window != exclude_window:
-                target_windows.append(self.playlist_window)
-        if (
-            hasattr(self, "equalizer_window")
-            and self.equalizer_window
-            and self.equalizer_window.isVisible()
-        ):
-            if self.equalizer_window != exclude_window:
-                target_windows.append(self.equalizer_window)
-        if (
-            hasattr(self, "album_art_window")
-            and self.album_art_window
-            and self.album_art_window.isVisible()
-        ):
-            if self.album_art_window != exclude_window:
-                target_windows.append(self.album_art_window)
+        target_windows = [self] + self._get_visible_floating_windows(exclude_window=exclude_window)
 
         # Check each target window for potential snapping
         for target_window in target_windows:
@@ -398,31 +380,7 @@ class DockingMixin:
         # of any part of another window, consider it still docked
         unsnap_threshold = 25  # pixels
 
-        # Create a list of potential target windows
-        target_windows = [self]  # Always check main window
-
-        # Add other floating windows if they exist and are visible
-        if (
-            hasattr(self, "playlist_window")
-            and self.playlist_window
-            and self.playlist_window.isVisible()
-        ):
-            if self.playlist_window != exclude_window:
-                target_windows.append(self.playlist_window)
-        if (
-            hasattr(self, "equalizer_window")
-            and self.equalizer_window
-            and self.equalizer_window.isVisible()
-        ):
-            if self.equalizer_window != exclude_window:
-                target_windows.append(self.equalizer_window)
-        if (
-            hasattr(self, "album_art_window")
-            and self.album_art_window
-            and self.album_art_window.isVisible()
-        ):
-            if self.album_art_window != exclude_window:
-                target_windows.append(self.album_art_window)
+        target_windows = [self] + self._get_visible_floating_windows(exclude_window=exclude_window)
 
         # Check each target window to see if the specified window rect is near it
         for target_window in target_windows:
@@ -462,25 +420,6 @@ class DockingMixin:
         self.raise_()
         self.activateWindow()
 
-        # Bring up other visible windows
-        if (
-            hasattr(self, "playlist_window")
-            and self.playlist_window
-            and self.playlist_window.isVisible()
-        ):
-            self.playlist_window.raise_()
-            self.playlist_window.activateWindow()
-        if (
-            hasattr(self, "equalizer_window")
-            and self.equalizer_window
-            and self.equalizer_window.isVisible()
-        ):
-            self.equalizer_window.raise_()
-            self.equalizer_window.activateWindow()
-        if (
-            hasattr(self, "album_art_window")
-            and self.album_art_window
-            and self.album_art_window.isVisible()
-        ):
-            self.album_art_window.raise_()
-            self.album_art_window.activateWindow()
+        for win in self._get_visible_floating_windows():
+            win.raise_()
+            win.activateWindow()

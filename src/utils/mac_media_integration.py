@@ -7,6 +7,8 @@ system-level media controls in Control Center and menu bar.
 """
 
 import platform
+import os
+import traceback
 from typing import TYPE_CHECKING, Optional, Any
 from .logger import get_logger
 
@@ -138,7 +140,6 @@ class MacMediaIntegration:
         else:
             # Fallback to filename if no title available
             if self.main_window.audio_engine.file_path:
-                import os
 
                 now_playing_info[MPMediaItemPropertyTitle] = os.path.splitext(
                     os.path.basename(self.main_window.audio_engine.file_path)
@@ -210,8 +211,6 @@ class MacMediaIntegration:
                     logger.error("Failed to create NSImage from album art data")
             except Exception as e:
                 logger.error(f"Error processing album art: {e}")
-                import traceback
-
                 traceback.print_exc()
         else:
             logger.info("No album art available for this track")
@@ -408,8 +407,6 @@ def create_mac_media_integration(main_window) -> Optional["MacMediaIntegration"]
         return integration
     except (RuntimeError, AttributeError, TypeError, OSError) as e:
         logger.error(f"Failed to initialize MacMediaIntegration: {type(e).__name__}: {e}")
-        import traceback
-
         traceback.print_exc()
         return None
 

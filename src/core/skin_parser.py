@@ -2,7 +2,8 @@ import os
 import json
 import zipfile
 import shutil
-import sys  # Moved from _load_spec_files method
+import sys
+from PIL import Image
 from appdirs import user_data_dir  # type: ignore
 from .region_parser import parse_region_file
 from .skin_data import SkinData
@@ -125,14 +126,10 @@ class SkinParser:
             return False
 
         try:
-            from PIL import Image
-
             with Image.open(main_bmp_path) as img:
-                # Try to read basic image info to ensure it's a valid image
                 img.verify()
-            # Reopen after verify since verify() closes the file
             with Image.open(main_bmp_path) as img:
-                img.load()  # Read the file to be sure
+                img.load()
         except (OSError, ValueError) as e:
             logger.info(f"main.bmp is not a valid image file: {e}")
             return False

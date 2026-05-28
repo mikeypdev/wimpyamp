@@ -6,6 +6,7 @@ and equalization using librosa, sounddevice, and scipy.
 """
 
 import numpy as np
+import os
 import librosa
 import sounddevice as sd  # type: ignore
 import threading
@@ -198,9 +199,6 @@ class AudioEngine:
 
     def set_eq(self, bands: Dict):
         """Sets the gain for different EQ frequency bands."""
-        self.eq_bands = bands.copy()  # Make a copy to avoid reference issues
-        # Update the equalization bands with default values if not provided
-        # Values are in dB, typically ranging from -12dB to +12dB (Winamp standard)
         default_bands = {
             "preamp": 0.0,  # in dB
             "60hz": 0.0,  # in dB
@@ -416,9 +414,6 @@ class AudioEngine:
 
     def get_album_art(self):
         """Returns album art data of the loaded track - either embedded or from external file."""
-        import os
-
-        # First, try to get embedded album art from metadata
         if (
             self.metadata
             and "album_art" in self.metadata
@@ -426,10 +421,10 @@ class AudioEngine:
         ):
             return self.metadata["album_art"]
 
-        # If no embedded art, search for local folder images
         if self.file_path:
             folder_path = os.path.dirname(self.file_path)
-            album_art_file = self._search_local_album_art(folder_path)
+            album_title = self.metadata.get("album", "Unknown")
+            album_art_file = search_local_album_art(folder_path, album_title)
 
             if album_art_file:
                 try:
@@ -440,11 +435,6 @@ class AudioEngine:
                     logger.error(f"Error reading album art file {album_art_file}: {e}")
 
         return None
-
-    def _search_local_album_art(self, folder_path):
-        """Search for local album art files in the specified folder."""
-        album_title = self.metadata.get("album", "Unknown")
-        return search_local_album_art(folder_path, album_title)
 
     def get_metadata(self):
         """Returns metadata of the loaded track."""
@@ -548,8 +538,6 @@ class AudioEngine:
 
     def _process_spectrum_data(self, audio_samples):
         """Process audio samples for spectrum analyzer visualization."""
-        import numpy as np
-
         # Ensure we have enough samples for FFT
         if len(audio_samples) < 512:
             return [0.0] * 19  # Return 19 zero values if not enough samples
@@ -630,34 +618,75 @@ class AudioEngine:
                 self.seek_position = target_time
                 self.seek_requested = True
 
+    def _apply_volume_and_balance(self, chunk: np.ndarray) -> np.ndarray:
+        chunk = chunk * self.volume
+        if self.audio_data.ndim > 1 and self.audio_data.shape[0] == 2:
+            left_gain = min(1.0, 1.0 - self.balance)
+            right_gain = min(1.0, 1.0 + self.balance)
+            if chunk.shape[0] >= 2:
+                chunk[0, :] *= left_gain
+                chunk[1, :] *= right_gain
+            elif chunk.shape[0] == 1:
+                mono_audio = chunk[0, :]
+                chunk = np.array([mono_audio * left_gain, mono_audio * right_gain])
+        return chunk
+
+    def _copy_audio_to_output(self, outdata: np.ndarray, chunk: np.ndarray):
+        if self.audio_data.ndim > 1:
+            if outdata.shape[1] == chunk.shape[0]:
+                outdata[:, :] = chunk.T
+            elif outdata.shape[1] == 1:
+                if chunk.shape[0] == 1:
+                    outdata[: chunk.shape[1], 0] = chunk[0, :]
+                else:
+                    mono_chunk = (chunk[0, :] + chunk[1, :]) / 2
+                    outdata[: len(mono_chunk), 0] = mono_chunk
+        else:
+            n = min(len(chunk), outdata.shape[0])
+            if outdata.shape[1] == 1:
+                outdata[:n, 0] = chunk[:n]
+            else:
+                outdata[:n, 0] = chunk[:n]
+                outdata[:n, 1] = chunk[:n]
+
+    def _update_visualization_buffer(self, chunk: np.ndarray):
+        if chunk.ndim > 1:
+            mono_chunk = np.mean(chunk, axis=0) if chunk.shape[0] > 1 else chunk[0, :]
+        else:
+            mono_chunk = chunk
+        self.audio_buffer.extend(mono_chunk)
+
+    def _notify_position_update(self, last_callback_time, callback_interval):
+        current_time = time.time()
+        if (current_time - last_callback_time[0]) < callback_interval:
+            return
+        try:
+            with self._state_lock:
+                pos_copy = self.current_position
+            if self.playback_callback:
+                self.playback_callback(pos_copy, self.duration)
+            last_callback_time[0] = current_time
+        except (RuntimeError, TypeError) as e:
+            logger.error(f"Error in audio callbacks: {e}")
+
     def _playback_worker(self):
         """Internal method that handles audio playback in a separate thread."""
-        # Define chunk size for streaming
         chunk_size = 4096
 
-        # Calculate start index based on current position
         start_idx = int(self.current_position * self.sample_rate)
 
-        # Determine number of channels
         if self.audio_data.ndim == 1:
             channels = 1
         else:
             channels = self.audio_data.shape[0]
 
-        # Use the object-level lock for safe state updates
         state_lock = self._state_lock
+        callback_interval = 0.1
+        last_callback_time = [time.time()]
 
-        # Track last callback time for throttling
-        callback_interval = 0.1  # 100ms between callbacks to avoid flooding UI
-        last_callback_time = [
-            time.time()
-        ]  # Use list to make it mutable in nested function
-
-        # Callback function for sounddevice stream
         def audio_callback(outdata, frames, callback_time, status):
             nonlocal start_idx
 
-            # Check if a seek has been requested
             with self._state_lock:
                 if self.seek_requested:
                     seek_start_idx = int(self.seek_position * self.sample_rate)
@@ -665,157 +694,47 @@ class AudioEngine:
                     self.current_position = self.seek_position
                     self.seek_requested = False
 
-            # Calculate end index for this chunk
-            end_idx = min(
-                start_idx + frames,
-                (
-                    self.audio_data.shape[-1]
-                    if self.audio_data.ndim > 1
-                    else len(self.audio_data)
-                ),
+            total_samples = (
+                self.audio_data.shape[-1]
+                if self.audio_data.ndim > 1
+                else len(self.audio_data)
             )
+            end_idx = min(start_idx + frames, total_samples)
 
-            # Extract chunk
             if self.audio_data.ndim == 1:
                 chunk = self.audio_data[start_idx:end_idx]
-                # Pad with zeros if chunk is smaller than frames
                 if len(chunk) < frames:
                     chunk = np.pad(chunk, (0, frames - len(chunk)), mode="constant")
             else:
                 chunk = self.audio_data[:, start_idx:end_idx]
-                # Pad with zeros if chunk is smaller than frames
                 if chunk.shape[1] < frames:
                     pad_size = frames - chunk.shape[1]
                     chunk = np.pad(chunk, ((0, 0), (0, pad_size)), mode="constant")
 
-            # Apply volume
-            chunk = chunk * self.volume
+            chunk = self._apply_volume_and_balance(chunk)
 
-            # Apply balance if stereo
-            if self.audio_data.ndim > 1 and self.audio_data.shape[0] == 2:
-                left_gain = min(
-                    1.0, 1.0 - self.balance
-                )  # 0 when balance = 1.0, 1.0 when balance = -1.0
-                right_gain = min(
-                    1.0, 1.0 + self.balance
-                )  # 0 when balance = -1.0, 1.0 when balance = 1.0
-                if chunk.shape[0] >= 2:  # Ensure we have 2 channels
-                    chunk[0, :] *= left_gain  # Left channel
-                    chunk[1, :] *= right_gain  # Right channel
-                elif (
-                    chunk.shape[0] == 1
-                ):  # Mono file being balanced - duplicate to both channels
-                    mono_audio = chunk[0, :]
-                    chunk = np.array([mono_audio * left_gain, mono_audio * right_gain])
-
-            # Apply EQ if enabled
-            # Note: self.eq_bands is always a dict, but might be empty initially
-            # Only apply EQ if it's turned on (self.is_eq_on is True)
             if self.is_eq_on:
                 chunk = self._apply_eq_to_chunk(chunk)
 
-            # Update position based on frames processed
-            # Calculate position as a time value in seconds
             new_position = end_idx / self.sample_rate if self.sample_rate > 0 else 0.0
-
-            # Clamp position to valid range to prevent overflow
             new_position = max(0.0, min(new_position, self.duration))
 
             with state_lock:
                 self.current_position = new_position
 
-            # Add audio samples to the visualization buffer for processing
-            # Convert to mono if needed for visualization
-            if chunk.ndim > 1:
-                mono_chunk = (
-                    np.mean(chunk, axis=0) if chunk.shape[0] > 1 else chunk[0, :]
-                )
-            else:
-                mono_chunk = chunk
+            self._update_visualization_buffer(chunk)
+            self._notify_position_update(
+                last_callback_time, callback_interval
+            )
+            self._copy_audio_to_output(outdata, chunk)
 
-            # Add the samples to the visualization buffer
-            for sample in mono_chunk:
-                self.audio_buffer.append(sample)
-
-            # Throttle the callbacks to avoid flooding the UI
-            current_time = time.time()
-            if (current_time - last_callback_time[0]) >= callback_interval:
-                try:
-                    # Use a copy of the position to avoid race conditions
-                    with state_lock:
-                        pos_copy = self.current_position
-
-                    # Call playback callback if available
-                    if self.playback_callback:
-                        self.playback_callback(pos_copy, self.duration)
-
-                    last_callback_time[0] = current_time
-                except (RuntimeError, TypeError) as e:
-                    logger.error(f"Error in audio callbacks: {e}")
-
-            # Copy to output buffer
-            if self.audio_data.ndim > 1:
-                # For multi-dimensional (stereo) audio
-                if (
-                    outdata.shape[1] == chunk.shape[0]
-                ):  # Output expects [frames, channels]
-                    outdata[:, :] = chunk.T
-                elif (
-                    outdata.shape[0] == chunk.shape[1]
-                    and outdata.shape[1] == chunk.shape[0]
-                ):  # Correct orientation
-                    outdata[:, :] = chunk.T
-                else:
-                    # Fallback: reshape appropriately
-                    if outdata.shape[1] == 2 and chunk.shape[0] == 2:
-                        if chunk.shape[1] == outdata.shape[0]:
-                            outdata[:, :] = chunk.T
-                        else:
-                            # Need to make sure chunk has proper width
-                            if chunk.shape[1] < outdata.shape[0]:
-                                chunk = np.pad(
-                                    chunk,
-                                    ((0, 0), (0, outdata.shape[0] - chunk.shape[1])),
-                                    mode="constant",
-                                )
-                            outdata[: chunk.shape[1], :] = chunk.T
-                    elif outdata.shape[1] == 1:  # Output is mono
-                        if chunk.shape[0] == 1:
-                            outdata[: chunk.shape[1], 0] = (
-                                chunk[0, :] if chunk.ndim > 1 else chunk[:]
-                            )
-                        else:  # Convert stereo to mono by averaging
-                            mono_chunk = (chunk[0, :] + chunk[1, :]) / 2
-                            outdata[: len(mono_chunk), 0] = mono_chunk
-            else:
-                # For mono audio
-                if outdata.shape[1] == 1:  # Output expects mono
-                    if len(chunk) > outdata.shape[0]:
-                        outdata[:, 0] = chunk[: outdata.shape[0]]
-                    else:
-                        outdata[: len(chunk), 0] = chunk
-                else:  # Output expects stereo but we have mono
-                    if len(chunk) > outdata.shape[0]:
-                        outdata[:, 0] = chunk[: outdata.shape[0]]
-                        outdata[:, 1] = chunk[: outdata.shape[0]]
-                    else:
-                        outdata[: len(chunk), 0] = chunk
-                        outdata[: len(chunk), 1] = chunk
-
-            # Update start index for next callback
             start_idx = end_idx
 
-            # Stop if we've reached the end
-            if end_idx >= (
-                self.audio_data.shape[-1]
-                if self.audio_data.ndim > 1
-                else len(self.audio_data)
-            ):
+            if end_idx >= total_samples:
                 with state_lock:
                     self.is_playing = False
                     self.is_paused = False
 
-        # Open and start the audio stream
         try:
             with sd.OutputStream(
                 samplerate=self.sample_rate,
@@ -823,7 +742,6 @@ class AudioEngine:
                 callback=audio_callback,
                 blocksize=chunk_size,
             ):
-                # Continue while playing and not paused
                 total_samples = (
                     self.audio_data.shape[-1]
                     if self.audio_data.ndim > 1
@@ -834,9 +752,7 @@ class AudioEngine:
                     and start_idx < total_samples
                     and not self.stop_event.is_set()
                 ):
-                    time.sleep(0.05)  # Smaller delay for smoother UI updates
-
-                    # Check if we've reached the end
+                    time.sleep(0.05)
                     if start_idx >= total_samples:
                         break
 

@@ -1742,7 +1742,6 @@ class MainWindow(DockingMixin, QWidget):
 
 
 def main():
-    import sys
     from PySide6.QtGui import QKeySequence
     from PySide6.QtCore import Qt
 

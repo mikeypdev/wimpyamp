@@ -51,6 +51,13 @@ class SpriteManager:
 
                 rgba_pil_image = cropped_pil_image.convert("RGBA")
 
+                if transparency_color:
+                    arr = np.array(rgba_pil_image)
+                    r, g, b = transparency_color
+                    match = (arr[:, :, 0] == r) & (arr[:, :, 1] == g) & (arr[:, :, 2] == b)
+                    arr[match, 3] = 0
+                    rgba_pil_image = Image.fromarray(arr, "RGBA")
+
                 q_image = QImage(
                     rgba_pil_image.tobytes("raw", "RGBA"),
                     rgba_pil_image.width,
@@ -62,21 +69,6 @@ class SpriteManager:
                     raise OSError(
                         f"QImage failed to load from PIL Image for {image_path}"
                     )
-
-                if transparency_color:
-                    arr = np.array(rgba_pil_image)
-                    r, g, b = transparency_color
-                    match = (arr[:, :, 0] == r) & (arr[:, :, 1] == g) & (arr[:, :, 2] == b)
-                    arr[match, 3] = 0
-                    rgba_pil_image = Image.fromarray(arr, "RGBA")
-
-                    q_image = QImage(
-                        rgba_pil_image.tobytes("raw", "RGBA"),
-                        rgba_pil_image.width,
-                        rgba_pil_image.height,
-                        QImage.Format_RGBA8888,
-                    )
-                    q_image = q_image.convertToFormat(QImage.Format_ARGB32)
 
                 pixmap = QPixmap(q_image.size())
                 pixmap.fill(Qt.transparent)

@@ -14,10 +14,10 @@ from ..utils.logger import get_logger
 logger = get_logger(__name__)
 
 METADATA_KEYS = {
-    "title": ["TIT2", "title", "\xa9nam", "TITLE", "©nam"],
-    "artist": ["TPE1", "artist", "\xa9ART", "ARTIST", "©ART"],
-    "album": ["TALB", "album", "\xa9alb", "ALBUM", "©alb"],
-    "album_artist": ["TPE2", "albumartist", "aART", "©aAR"],
+    "title": ["TIT2", "title", "\xa9nam", "TITLE"],
+    "artist": ["TPE1", "artist", "\xa9ART", "ARTIST"],
+    "album": ["TALB", "album", "\xa9alb", "ALBUM"],
+    "album_artist": ["TPE2", "albumartist", "aART", "\xa9aAR"],
 }
 
 
