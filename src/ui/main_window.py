@@ -1879,7 +1879,7 @@ def main():
             about_html = (
                 f"<h2>WimPyAmp</h2>Version: {version}<br><br>"
                 '<a href="https://github.com/mikeypdev/wimpyamp">https://github.com/mikeypdev/wimpyamp</a><br><br>'
-                "©2025 Mike Perry"
+                "©2025-2026 Mike Perry"
             )
 
             # Use a custom QMessageBox to allow clickable link
