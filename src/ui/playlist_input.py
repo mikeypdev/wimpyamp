@@ -1,5 +1,6 @@
 from PySide6.QtCore import Qt, QRect, QPoint
 from ..utils.logger import get_logger
+from .playlist_constants import SUB_MENU_ITEMS
 
 logger = get_logger(__name__)
 
@@ -205,193 +206,24 @@ class PlaylistInputMixin:
             button_bar_y = self.height() - 30
 
             # Handle sub-menu button clicks if any menu is open
-            if self.menu_manager.is_menu_open("add"):
-                add_button_data = next(
-                    (b for b in button_bar_spec["buttons"] if b["id"] == "add"), None
+            for menu_id, items in SUB_MENU_ITEMS.items():
+                if not self.menu_manager.is_menu_open(menu_id):
+                    continue
+                button_data = next(
+                    (b for b in button_bar_spec["buttons"] if b["id"] == menu_id), None
                 )
-                if add_button_data:
-                    main_add_button_x = button_bar_x + add_button_data["x"]
-                    main_add_button_y = button_bar_y + add_button_data["y"]
-                    main_add_button_height = 18
-                    sub_menu_start_y = (main_add_button_y + main_add_button_height) - (
-                        3 * 18
-                    )
-
-                    add_url_rect = QRect(
-                        main_add_button_x, sub_menu_start_y + 0, 22, 18
-                    )
-                    add_dir_rect = QRect(
-                        main_add_button_x, sub_menu_start_y + 18, 22, 18
-                    )
-                    add_file_rect = QRect(
-                        main_add_button_x, sub_menu_start_y + 36, 22, 18
-                    )
-
-                    if add_url_rect.contains(event.pos()):
-                        self._load_url_to_playlist()
-                        self._close_all_sub_menus()
-                        return
-                    elif add_dir_rect.contains(event.pos()):
-                        self._load_directory_to_playlist()
-                        self._close_all_sub_menus()
-                        return
-                    elif add_file_rect.contains(event.pos()):
-                        self._load_file_to_playlist()  # Re-using existing function for now
-                        self._close_all_sub_menus()
-                        return
-            elif self.menu_manager.is_menu_open("remove"):
-                remove_button_data = next(
-                    (b for b in button_bar_spec["buttons"] if b["id"] == "remove"), None
-                )
-                if remove_button_data:
-                    main_remove_button_x = button_bar_x + remove_button_data["x"]
-                    main_remove_button_y = button_bar_y + remove_button_data["y"]
-                    main_remove_button_height = 18
-                    sub_menu_start_y = (
-                        main_remove_button_y + main_remove_button_height
-                    ) - (4 * 18)
-
-                    remove_duplicates_rect = QRect(
-                        main_remove_button_x, sub_menu_start_y + 0, 22, 18
-                    )
-                    remove_all_rect = QRect(
-                        main_remove_button_x, sub_menu_start_y + 18, 22, 18
-                    )
-                    crop_rect = QRect(
-                        main_remove_button_x, sub_menu_start_y + 36, 22, 18
-                    )
-                    remove_selected_rect = QRect(
-                        main_remove_button_x, sub_menu_start_y + 54, 22, 18
-                    )
-
-                    if remove_duplicates_rect.contains(event.pos()):
-                        self._remove_duplicate_tracks()
-                        self._close_all_sub_menus()
-                        return
-                    elif remove_all_rect.contains(event.pos()):
-                        self._remove_all_tracks()
-                        self._close_all_sub_menus()
-                        return
-                    elif crop_rect.contains(event.pos()):
-                        self._crop_playlist()
-                        self._close_all_sub_menus()
-                        return
-                    elif remove_selected_rect.contains(event.pos()):
-                        self.remove_playlist_item()  # Reuse existing functionality
-                        self._close_all_sub_menus()
-                        return
-            elif self.menu_manager.is_menu_open("select"):
-                select_button_data = next(
-                    (b for b in button_bar_spec["buttons"] if b["id"] == "select"), None
-                )
-                if select_button_data:
-                    main_select_button_x = button_bar_x + select_button_data["x"]
-                    main_select_button_y = button_bar_y + select_button_data["y"]
-                    main_select_button_height = 18
-                    sub_menu_start_y = (
-                        main_select_button_y + main_select_button_height
-                    ) - (3 * 18)
-
-                    invert_selection_rect = QRect(
-                        main_select_button_x, sub_menu_start_y + 0, 22, 18
-                    )
-                    select_none_rect = QRect(
-                        main_select_button_x, sub_menu_start_y + 18, 22, 18
-                    )
-                    select_all_rect = QRect(
-                        main_select_button_x, sub_menu_start_y + 36, 22, 18
-                    )
-
-                    if invert_selection_rect.contains(event.pos()):
-                        self._invert_selection()
-                        self._close_all_sub_menus()
-                        return
-                    elif select_none_rect.contains(event.pos()):
-                        self._select_none()
-                        self._close_all_sub_menus()
-                        return
-                    elif select_all_rect.contains(event.pos()):
-                        self._select_all()
-                        self._close_all_sub_menus()
-                        return
-            elif self.menu_manager.is_menu_open("misc"):
-                misc_button_data = next(
-                    (b for b in button_bar_spec["buttons"] if b["id"] == "misc"), None
-                )
-                if misc_button_data:
-                    main_misc_button_x = button_bar_x + misc_button_data["x"]
-                    main_misc_button_y = button_bar_y + misc_button_data["y"]
-                    main_misc_button_height = 18
-                    sub_menu_start_y = (
-                        main_misc_button_y + main_misc_button_height
-                    ) - (3 * 18)
-
-                    sort_list_rect = QRect(
-                        main_misc_button_x, sub_menu_start_y + 0, 22, 18
-                    )
-                    file_info_rect = QRect(
-                        main_misc_button_x, sub_menu_start_y + 18, 22, 18
-                    )
-                    misc_options_rect = QRect(
-                        main_misc_button_x, sub_menu_start_y + 36, 22, 18
-                    )
-
-                    if sort_list_rect.contains(event.pos()):
-                        self._show_sort_dialog()
-                        self._close_all_sub_menus()
-                        return
-                    elif file_info_rect.contains(event.pos()):
-                        self._show_file_info()
-                        self._close_all_sub_menus()
-                        return
-                    elif misc_options_rect.contains(event.pos()):
-                        self._show_misc_options()
-                        self._close_all_sub_menus()
-                        return
-            elif self.menu_manager.is_menu_open("list"):
-                list_button_data = next(
-                    (b for b in button_bar_spec["buttons"] if b["id"] == "list"), None
-                )
-                if list_button_data:
-                    # Use the same dynamic positioning for the LIST button as in the button manager
-                    # Maintain the same distance from right edge as in original skin
-                    # Original button position was button_bar_x (14) + list button x (218) = 232
-                    # Original window width was approximately 275, button width is 22
-                    # Right edge of button was at 232 + 22 = 254
-                    # So right margin was 275 - 254 = 21
-                    right_margin = 21  # Approximate right margin in original skin
-
-                    # Position button maintaining same margin to right edge
-                    main_list_button_x = (
-                        self.width() - 22 - right_margin
-                    )  # 22 is typical button width
-                    # Use the same Y position calculation as other buttons in this event handler
-                    main_list_button_y = button_bar_y + list_button_data["y"]
-                    main_list_button_height = 18
-                    sub_menu_start_y = (
-                        main_list_button_y + main_list_button_height
-                    ) - (3 * 18)
-
-                    new_list_rect = QRect(
-                        main_list_button_x, sub_menu_start_y + 0, 22, 18
-                    )
-                    save_list_rect = QRect(
-                        main_list_button_x, sub_menu_start_y + 18, 22, 18
-                    )
-                    load_list_rect = QRect(
-                        main_list_button_x, sub_menu_start_y + 36, 22, 18
-                    )
-
-                    if new_list_rect.contains(event.pos()):
-                        self._new_playlist()
-                        self._close_all_sub_menus()
-                        return
-                    elif save_list_rect.contains(event.pos()):
-                        self._save_playlist()  # Re-using existing function
-                        self._close_all_sub_menus()
-                        return
-                    elif load_list_rect.contains(event.pos()):
-                        self._load_playlist_from_file()  # Re-using existing function
+                if not button_data:
+                    continue
+                if menu_id == "list":
+                    main_button_x = self.width() - 22 - 21
+                else:
+                    main_button_x = button_bar_x + button_data["x"]
+                main_button_y = button_bar_y + button_data["y"]
+                sub_menu_start_y = (main_button_y + 18) - (len(items) * 18)
+                for i, (item_id, _sprite_prefix, action_name) in enumerate(items):
+                    rect = QRect(main_button_x, sub_menu_start_y + i * 18, 22, 18)
+                    if rect.contains(event.pos()):
+                        getattr(self, action_name)()
                         self._close_all_sub_menus()
                         return
 

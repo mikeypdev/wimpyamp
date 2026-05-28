@@ -1,11 +1,18 @@
 from PySide6.QtGui import QPainter, QColor, QFont
 from PySide6.QtCore import QRect, QPoint
 from ..utils.logger import get_logger
+from .playlist_constants import SUB_MENU_ITEMS, SUB_MENU_DECORATION_SPRITES
 
 logger = get_logger(__name__)
 
 
 class PlaylistRendererMixin:
+    def _get_regions_map(self):
+        return {
+            key: self.playlist_spec["layout"]["regions"][key]
+            for key in ("top_bar", "left_edge", "right_edge", "bottom_bar", "track_area")
+        }
+
     def _draw_tiled_region(self, painter, region_spec, target_rect):
         """Draws a region with tiling rules."""
         tiling = region_spec.get("tiling")
@@ -118,13 +125,7 @@ class PlaylistRendererMixin:
 
     def _draw_background_regions(self, painter):
         """Draw background regions including top bar, bottom bar, and track area."""
-        regions_map = {
-            "top_bar": self.playlist_spec["layout"]["regions"]["top_bar"],
-            "left_edge": self.playlist_spec["layout"]["regions"]["left_edge"],
-            "right_edge": self.playlist_spec["layout"]["regions"]["right_edge"],
-            "bottom_bar": self.playlist_spec["layout"]["regions"]["bottom_bar"],
-            "track_area": self.playlist_spec["layout"]["regions"]["track_area"],
-        }
+        regions_map = self._get_regions_map()
 
         # Draw top bar components
         top_bar_spec = regions_map["top_bar"]
@@ -354,13 +355,7 @@ class PlaylistRendererMixin:
 
     def _draw_track_text_lines(self, painter):
         """Draw the playlist item text lines in the track area."""
-        regions_map = {
-            "top_bar": self.playlist_spec["layout"]["regions"]["top_bar"],
-            "left_edge": self.playlist_spec["layout"]["regions"]["left_edge"],
-            "right_edge": self.playlist_spec["layout"]["regions"]["right_edge"],
-            "bottom_bar": self.playlist_spec["layout"]["regions"]["bottom_bar"],
-            "track_area": self.playlist_spec["layout"]["regions"]["track_area"],
-        }
+        regions_map = self._get_regions_map()
 
         track_area_spec = regions_map["track_area"]
         track_area_x = track_area_spec["position"]["x"]
@@ -455,13 +450,7 @@ class PlaylistRendererMixin:
 
     def _draw_borders_and_edges(self, painter):
         """Draw borders and edges including left and right edges."""
-        regions_map = {
-            "top_bar": self.playlist_spec["layout"]["regions"]["top_bar"],
-            "left_edge": self.playlist_spec["layout"]["regions"]["left_edge"],
-            "right_edge": self.playlist_spec["layout"]["regions"]["right_edge"],
-            "bottom_bar": self.playlist_spec["layout"]["regions"]["bottom_bar"],
-            "track_area": self.playlist_spec["layout"]["regions"]["track_area"],
-        }
+        regions_map = self._get_regions_map()
 
         # Ensure bottom_bar_y is defined
         bottom_bar_y = self._get_bottom_bar_y()
@@ -554,331 +543,40 @@ class PlaylistRendererMixin:
         # Draw playlist time status display
         self._draw_playlist_time_status_display(painter)
 
-        # Draw add button sub-menu if open
-        if self.menu_manager.is_menu_open("add"):
-            # Get the position of the main "add" button
-            add_button_data = next(
-                (b for b in button_bar_spec["buttons"] if b["id"] == "add"), None
+        # Draw sub-menus if any are open
+        for menu_id, items in SUB_MENU_ITEMS.items():
+            if not self.menu_manager.is_menu_open(menu_id):
+                continue
+            button_data = next(
+                (b for b in button_bar_spec["buttons"] if b["id"] == menu_id), None
             )
-            if add_button_data:
-                main_add_button_x = button_bar_x + add_button_data["x"]
-                main_add_button_y = button_bar_y + add_button_data["y"]
-                main_add_button_height = 18  # Assuming button height is 18
+            if not button_data:
+                continue
+            if menu_id == "list":
+                main_button_x = self.width() - 22 - 21
+            else:
+                main_button_x = button_bar_x + button_data["x"]
+            main_button_y = button_bar_y + button_data["y"]
+            sub_menu_start_y = (main_button_y + 18) - (len(items) * 18)
 
-                # Calculate the starting Y for the sub-menu to align its bottom with the main add button's bottom
-                # The sub-menu has 3 buttons, each 18px high, so total height is 3 * 18 = 54px
-                # The bottom of the sub-menu should be at main_add_button_y + main_add_button_height
-                # So, sub_menu_start_y = (main_add_button_y + main_add_button_height) - (3 * 18)
-                sub_menu_start_y = (main_add_button_y + main_add_button_height) - (
-                    3 * 18
-                )
-
-                # Draw decoration bar (add)
-                decoration_bar_sprite = self._get_sprite_pixmap(
-                    "PLEDIT_DECORATION_BAR_ADD"
-                )
-                if decoration_bar_sprite:
-                    # Position to the left of the sub-menu buttons, aligned with sub_menu_start_y
-                    painter.drawPixmap(
-                        main_add_button_x - 3, sub_menu_start_y, decoration_bar_sprite
-                    )
-
-                # Draw sub-menu buttons
-                # Add URL button
-                add_url_sprite_id = (
-                    "PLEDIT_ADD_URL_BUTTON_PRESSED"
-                    if self.menu_manager.hovered_sub_menu_button_id == "add_url"
-                    else "PLEDIT_ADD_URL_BUTTON_UNPRESSED"
-                )
-                add_url_sprite = self._get_sprite_pixmap(add_url_sprite_id)
-                if add_url_sprite:
-                    painter.drawPixmap(
-                        main_add_button_x, sub_menu_start_y + 0, add_url_sprite
-                    )
-
-                # Add DIR button
-                add_dir_sprite_id = (
-                    "PLEDIT_ADD_DIR_BUTTON_PRESSED"
-                    if self.menu_manager.hovered_sub_menu_button_id == "add_dir"
-                    else "PLEDIT_ADD_DIR_BUTTON_UNPRESSED"
-                )
-                add_dir_sprite = self._get_sprite_pixmap(add_dir_sprite_id)
-                if add_dir_sprite:
-                    painter.drawPixmap(
-                        main_add_button_x, sub_menu_start_y + 18, add_dir_sprite
-                    )
-
-                # Add FILE button
-                add_file_sprite_id = (
-                    "PLEDIT_ADD_FILE_BUTTON_PRESSED"
-                    if self.menu_manager.hovered_sub_menu_button_id == "add_file"
-                    else "PLEDIT_ADD_FILE_BUTTON_UNPRESSED"
-                )
-                add_file_sprite = self._get_sprite_pixmap(add_file_sprite_id)
-                if add_file_sprite:
-                    painter.drawPixmap(
-                        main_add_button_x, sub_menu_start_y + 36, add_file_sprite
-                    )
-        elif self.menu_manager.is_menu_open("remove"):
-            remove_button_data = next(
-                (b for b in button_bar_spec["buttons"] if b["id"] == "remove"), None
+            decoration_sprite = self._get_sprite_pixmap(
+                SUB_MENU_DECORATION_SPRITES[menu_id]
             )
-            if remove_button_data:
-                main_remove_button_x = button_bar_x + remove_button_data["x"]
-                main_remove_button_y = button_bar_y + remove_button_data["y"]
-                main_remove_button_height = 18
-
-                sub_menu_start_y = (
-                    main_remove_button_y + main_remove_button_height
-                ) - (
-                    4 * 18
-                )  # 4 buttons in remove menu
-
-                decoration_bar_sprite = self._get_sprite_pixmap(
-                    "PLEDIT_DECORATION_BAR_REMOVE"
+            if decoration_sprite:
+                painter.drawPixmap(
+                    main_button_x - 3, sub_menu_start_y, decoration_sprite
                 )
-                if decoration_bar_sprite:
+
+            for i, (item_id, sprite_prefix, _action_name) in enumerate(items):
+                sprite_id = (
+                    f"{sprite_prefix}_PRESSED"
+                    if self.menu_manager.hovered_sub_menu_button_id == item_id
+                    else f"{sprite_prefix}_UNPRESSED"
+                )
+                sprite = self._get_sprite_pixmap(sprite_id)
+                if sprite:
                     painter.drawPixmap(
-                        main_remove_button_x - 3,
-                        sub_menu_start_y,
-                        decoration_bar_sprite,
-                    )
-
-                remove_duplicates_sprite_id = (
-                    "PLEDIT_MISC_REMOVE_BUTTON_PRESSED"
-                    if self.menu_manager.hovered_sub_menu_button_id
-                    == "remove_duplicates"
-                    else "PLEDIT_MISC_REMOVE_BUTTON_UNPRESSED"
-                )
-                remove_duplicates_sprite = self._get_sprite_pixmap(
-                    remove_duplicates_sprite_id
-                )
-                if remove_duplicates_sprite:
-                    painter.drawPixmap(
-                        main_remove_button_x,
-                        sub_menu_start_y + 0,
-                        remove_duplicates_sprite,
-                    )
-
-                remove_all_sprite_id = (
-                    "PLEDIT_REMOVE_ALL_BUTTON_PRESSED"
-                    if self.menu_manager.hovered_sub_menu_button_id == "remove_all"
-                    else "PLEDIT_REMOVE_ALL_BUTTON_UNPRESSED"
-                )
-                remove_all_sprite = self._get_sprite_pixmap(remove_all_sprite_id)
-                if remove_all_sprite:
-                    painter.drawPixmap(
-                        main_remove_button_x, sub_menu_start_y + 18, remove_all_sprite
-                    )
-
-                crop_sprite_id = (
-                    "PLEDIT_CROP_BUTTON_PRESSED"
-                    if self.menu_manager.hovered_sub_menu_button_id == "crop"
-                    else "PLEDIT_CROP_BUTTON_UNPRESSED"
-                )
-                crop_sprite = self._get_sprite_pixmap(crop_sprite_id)
-                if crop_sprite:
-                    painter.drawPixmap(
-                        main_remove_button_x, sub_menu_start_y + 36, crop_sprite
-                    )
-
-                remove_selected_sprite_id = (
-                    "PLEDIT_REMOVE_FILE_BUTTON_PRESSED"
-                    if self.menu_manager.hovered_sub_menu_button_id == "remove_selected"
-                    else "PLEDIT_REMOVE_FILE_BUTTON_UNPRESSED"
-                )
-                remove_selected_sprite = self._get_sprite_pixmap(
-                    remove_selected_sprite_id
-                )
-                if remove_selected_sprite:
-                    painter.drawPixmap(
-                        main_remove_button_x,
-                        sub_menu_start_y + 54,
-                        remove_selected_sprite,
-                    )
-
-        elif self.menu_manager.is_menu_open("select"):
-            select_button_data = next(
-                (b for b in button_bar_spec["buttons"] if b["id"] == "select"), None
-            )
-            if select_button_data:
-                main_select_button_x = button_bar_x + select_button_data["x"]
-                main_select_button_y = button_bar_y + select_button_data["y"]
-                main_select_button_height = 18
-
-                sub_menu_start_y = (
-                    main_select_button_y + main_select_button_height
-                ) - (
-                    3 * 18
-                )  # 3 buttons
-
-                decoration_bar_sprite = self._get_sprite_pixmap(
-                    "PLEDIT_DECORATION_BAR_SELECT"
-                )
-                if decoration_bar_sprite:
-                    painter.drawPixmap(
-                        main_select_button_x - 3,
-                        sub_menu_start_y,
-                        decoration_bar_sprite,
-                    )
-
-                invert_selection_sprite_id = (
-                    "PLEDIT_INVERT_SELECTION_BUTTON_PRESSED"
-                    if self.menu_manager.hovered_sub_menu_button_id
-                    == "invert_selection"
-                    else "PLEDIT_INVERT_SELECTION_BUTTON_UNPRESSED"
-                )
-                invert_selection_sprite = self._get_sprite_pixmap(
-                    invert_selection_sprite_id
-                )
-                if invert_selection_sprite:
-                    painter.drawPixmap(
-                        main_select_button_x,
-                        sub_menu_start_y + 0,
-                        invert_selection_sprite,
-                    )
-
-                select_none_sprite_id = (
-                    "PLEDIT_SELECT_NONE_BUTTON_PRESSED"
-                    if self.menu_manager.hovered_sub_menu_button_id == "select_none"
-                    else "PLEDIT_SELECT_NONE_BUTTON_UNPRESSED"
-                )
-                select_none_sprite = self._get_sprite_pixmap(select_none_sprite_id)
-                if select_none_sprite:
-                    painter.drawPixmap(
-                        main_select_button_x, sub_menu_start_y + 18, select_none_sprite
-                    )
-
-                select_all_sprite_id = (
-                    "PLEDIT_SELECT_ALL_BUTTON_PRESSED"
-                    if self.menu_manager.hovered_sub_menu_button_id == "select_all"
-                    else "PLEDIT_SELECT_ALL_BUTTON_UNPRESSED"
-                )
-                select_all_sprite = self._get_sprite_pixmap(select_all_sprite_id)
-                if select_all_sprite:
-                    painter.drawPixmap(
-                        main_select_button_x, sub_menu_start_y + 36, select_all_sprite
-                    )
-
-        elif self.menu_manager.is_menu_open("misc"):
-            misc_button_data = next(
-                (b for b in button_bar_spec["buttons"] if b["id"] == "misc"), None
-            )
-            if misc_button_data:
-                main_misc_button_x = button_bar_x + misc_button_data["x"]
-                main_misc_button_y = button_bar_y + misc_button_data["y"]
-                main_misc_button_height = 18
-
-                sub_menu_start_y = (main_misc_button_y + main_misc_button_height) - (
-                    3 * 18
-                )  # 3 buttons
-
-                decoration_bar_sprite = self._get_sprite_pixmap(
-                    "PLEDIT_DECORATION_BAR_MISC"
-                )
-                if decoration_bar_sprite:
-                    painter.drawPixmap(
-                        main_misc_button_x - 3, sub_menu_start_y, decoration_bar_sprite
-                    )
-
-                sort_list_sprite_id = (
-                    "PLEDIT_SORT_LIST_BUTTON_PRESSED"
-                    if self.menu_manager.hovered_sub_menu_button_id == "sort_list"
-                    else "PLEDIT_SORT_LIST_BUTTON_UNPRESSED"
-                )
-                sort_list_sprite = self._get_sprite_pixmap(sort_list_sprite_id)
-                if sort_list_sprite:
-                    painter.drawPixmap(
-                        main_misc_button_x, sub_menu_start_y + 0, sort_list_sprite
-                    )
-
-                file_info_sprite_id = (
-                    "PLEDIT_FILE_INFO_BUTTON_PRESSED"
-                    if self.menu_manager.hovered_sub_menu_button_id == "file_info"
-                    else "PLEDIT_FILE_INFO_BUTTON_UNPRESSED"
-                )
-                file_info_sprite = self._get_sprite_pixmap(file_info_sprite_id)
-                if file_info_sprite:
-                    painter.drawPixmap(
-                        main_misc_button_x, sub_menu_start_y + 18, file_info_sprite
-                    )
-
-                misc_options_sprite_id = (
-                    "PLEDIT_MISC_OPTIONS_BUTTON_PRESSED"
-                    if self.menu_manager.hovered_sub_menu_button_id == "misc_options"
-                    else "PLEDIT_MISC_OPTIONS_BUTTON_UNPRESSED"
-                )
-                misc_options_sprite = self._get_sprite_pixmap(misc_options_sprite_id)
-                if misc_options_sprite:
-                    painter.drawPixmap(
-                        main_misc_button_x, sub_menu_start_y + 36, misc_options_sprite
-                    )
-
-        elif self.menu_manager.is_menu_open("list"):
-            list_button_data = next(
-                (b for b in button_bar_spec["buttons"] if b["id"] == "list"), None
-            )
-            if list_button_data:
-                # Use the same dynamic positioning for the LIST button as in the button manager
-                # Maintain the same distance from right edge as in original skin
-                # Original button position was button_bar_x (14) + list button x (218) = 232
-                # Original window width was approximately 275, button width is 22
-                # Right edge of button was at 232 + 22 = 254
-                # So right margin was 275 - 254 = 21
-                right_margin = 21  # Approximate right margin in original skin
-
-                # Position button maintaining same margin to right edge
-                main_list_button_x = (
-                    self.width() - 22 - right_margin
-                )  # 22 is typical button width
-                # Calculate Y position using the same logic as in the other event handlers
-                button_bar_y_calc = self.height() - 28  # Consistent with other handlers
-                main_list_button_y = button_bar_y_calc + list_button_data["y"]
-                main_list_button_height = 18
-
-                sub_menu_start_y = (main_list_button_y + main_list_button_height) - (
-                    3 * 18
-                )  # 3 buttons
-
-                decoration_bar_sprite = self._get_sprite_pixmap(
-                    "PLEDIT_DECORATION_BAR_LIST"
-                )
-                if decoration_bar_sprite:
-                    painter.drawPixmap(
-                        main_list_button_x - 3, sub_menu_start_y, decoration_bar_sprite
-                    )
-
-                new_list_sprite_id = (
-                    "PLEDIT_NEW_LIST_BUTTON_PRESSED"
-                    if self.menu_manager.hovered_sub_menu_button_id == "new_list"
-                    else "PLEDIT_NEW_LIST_BUTTON_UNPRESSED"
-                )
-                new_list_sprite = self._get_sprite_pixmap(new_list_sprite_id)
-                if new_list_sprite:
-                    painter.drawPixmap(
-                        main_list_button_x, sub_menu_start_y + 0, new_list_sprite
-                    )
-
-                save_list_sprite_id = (
-                    "PLEDIT_SAVE_LIST_BUTTON_PRESSED"
-                    if self.menu_manager.hovered_sub_menu_button_id == "save_list"
-                    else "PLEDIT_SAVE_LIST_BUTTON_UNPRESSED"
-                )
-                save_list_sprite = self._get_sprite_pixmap(save_list_sprite_id)
-                if save_list_sprite:
-                    painter.drawPixmap(
-                        main_list_button_x, sub_menu_start_y + 18, save_list_sprite
-                    )
-
-                load_list_sprite_id = (
-                    "PLEDIT_LOAD_LIST_BUTTON_PRESSED"
-                    if self.menu_manager.hovered_sub_menu_button_id == "load_list"
-                    else "PLEDIT_LOAD_LIST_BUTTON_UNPRESSED"
-                )
-                load_list_sprite = self._get_sprite_pixmap(load_list_sprite_id)
-                if load_list_sprite:
-                    painter.drawPixmap(
-                        main_list_button_x, sub_menu_start_y + 36, load_list_sprite
+                        main_button_x, sub_menu_start_y + i * 18, sprite
                     )
 
         # Draw scrollbar
