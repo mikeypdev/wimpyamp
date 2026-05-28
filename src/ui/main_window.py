@@ -4,6 +4,7 @@ from PySide6.QtWidgets import (
     QWidget,
     QFileDialog,
     QMenuBar,
+    QMenu,
 )
 from PySide6.QtGui import QPainter, QKeySequence, QShortcut, QAction, QFileOpenEvent
 from PySide6.QtCore import Qt, QPoint, QRect, QTimer, QDir
@@ -742,22 +743,27 @@ class MainWindow(DockingMixin, QWidget):
         self.ui_state.is_eject_pressed = True
         self.update()
         QApplication.processEvents()
-        default_music_path = self.preferences.get_default_music_path()
-        initial_path = default_music_path if default_music_path else ""
+        if hasattr(self, "playlist_window") and self.playlist_window and self.playlist_window._last_used_dir:
+            initial_path = self.playlist_window._last_used_dir
+        else:
+            initial_path = self.preferences.get_default_music_path() or ""
 
-        file_path, _ = QFileDialog.getOpenFileName(
+        file_paths, _ = QFileDialog.getOpenFileNames(
             self,
-            "Open Audio File",
+            "Open Audio Files",
             initial_path,
             "Audio Files (*.mp3 *.wav *.ogg *.flac *.m4a *.aac *.opus *.aiff *.au);;All Files (*)",
         )
 
         self.ui_state.is_eject_pressed = False
 
-        if file_path:
+        if file_paths:
+            if hasattr(self, "playlist_window") and self.playlist_window:
+                self.playlist_window._update_last_used_dir(file_paths[0])
+            self.playlist = file_paths
+            self.current_track_index = 0
+            file_path = file_paths[0]
             if self.audio_engine.load_track(file_path):
-                self.playlist = [file_path]
-                self.current_track_index = 0
                 self.update_playlist_display()
                 metadata = self.audio_engine.get_metadata()
                 if metadata:

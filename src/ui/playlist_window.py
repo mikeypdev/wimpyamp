@@ -33,6 +33,7 @@ class PlaylistWindow(PlaylistInputMixin, PlaylistRendererMixin, QWidget):
     ):
         super().__init__(parent)
         self.setWindowTitle("WimPyAmp Playlist Editor")
+        self._last_used_dir = None
         # Set window flags for completely borderless window
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.X11BypassWindowManagerHint)
 
@@ -658,23 +659,27 @@ class PlaylistWindow(PlaylistInputMixin, PlaylistRendererMixin, QWidget):
 
         self.update()
 
-    def _load_file_to_playlist(self):
-        options = QFileDialog.Options()
-        project_root = os.path.dirname(
-            os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        )
-        test_music_dir = os.path.join(project_root, "resources", "test_music")
-
-        # Use default music path from preferences if available, otherwise use test music directory
-        initial_path = test_music_dir  # Default fallback
+    def _get_initial_music_path(self, fallback=""):
+        if self._last_used_dir:
+            return self._last_used_dir
+        default_music_path = ""
         if (
             hasattr(self, "main_window")
             and self.main_window
             and hasattr(self.main_window, "preferences")
         ):
             default_music_path = self.main_window.preferences.get_default_music_path()
-            if default_music_path:
-                initial_path = default_music_path
+        return default_music_path if default_music_path else fallback
+
+    def _update_last_used_dir(self, path):
+        if path:
+            self._last_used_dir = os.path.dirname(path) if os.path.isfile(path) else path
+
+    def _load_file_to_playlist(self):
+        options = QFileDialog.Options()
+        initial_path = self._get_initial_music_path(
+            os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "resources", "test_music")
+        )
 
         file_path, _ = QFileDialog.getOpenFileName(
             self,
@@ -684,6 +689,7 @@ class PlaylistWindow(PlaylistInputMixin, PlaylistRendererMixin, QWidget):
             options=options,
         )
         if file_path:
+            self._update_last_used_dir(file_path)
             # Add to internal file path list
             self.playlist_filepaths.append(file_path)
 
@@ -1346,26 +1352,15 @@ class PlaylistWindow(PlaylistInputMixin, PlaylistRendererMixin, QWidget):
     def _load_directory_to_playlist(self):
         """Load all media files from a selected directory and its subdirectories."""
         options = QFileDialog.Options()
-        project_root = os.path.dirname(
-            os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        initial_path = self._get_initial_music_path(
+            os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "resources", "test_music")
         )
-        test_music_dir = os.path.join(project_root, "resources", "test_music")
-
-        # Use default music path from preferences if available, otherwise use test music directory
-        initial_path = test_music_dir  # Default fallback
-        if (
-            hasattr(self, "main_window")
-            and self.main_window
-            and hasattr(self.main_window, "preferences")
-        ):
-            default_music_path = self.main_window.preferences.get_default_music_path()
-            if default_music_path:
-                initial_path = default_music_path
 
         directory_path = QFileDialog.getExistingDirectory(
             self, "Select Directory to Add", initial_path, options=options
         )
         if directory_path:
+            self._update_last_used_dir(directory_path)
             # Define supported media file extensions
             media_extensions = {
                 ".mp3",
@@ -1437,16 +1432,7 @@ class PlaylistWindow(PlaylistInputMixin, PlaylistRendererMixin, QWidget):
 
     def _save_playlist(self):
         options = QFileDialog.Options()
-        # Use default music path for saving if available, otherwise use empty string
-        initial_path = ""  # Default fallback
-        if (
-            hasattr(self, "main_window")
-            and self.main_window
-            and hasattr(self.main_window, "preferences")
-        ):
-            default_music_path = self.main_window.preferences.get_default_music_path()
-            if default_music_path:
-                initial_path = default_music_path
+        initial_path = self._get_initial_music_path()
 
         file_path, _ = QFileDialog.getSaveFileName(
             self,
@@ -1456,6 +1442,7 @@ class PlaylistWindow(PlaylistInputMixin, PlaylistRendererMixin, QWidget):
             options=options,
         )
         if file_path:
+            self._update_last_used_dir(file_path)
             # Determine the directory where the playlist file is being saved
             playlist_dir = os.path.dirname(file_path)
 
@@ -1497,16 +1484,7 @@ class PlaylistWindow(PlaylistInputMixin, PlaylistRendererMixin, QWidget):
 
     def _load_playlist_from_file(self):
         options = QFileDialog.Options()
-        # Use default music path for loading if available, otherwise use empty string
-        initial_path = ""  # Default fallback
-        if (
-            hasattr(self, "main_window")
-            and self.main_window
-            and hasattr(self.main_window, "preferences")
-        ):
-            default_music_path = self.main_window.preferences.get_default_music_path()
-            if default_music_path:
-                initial_path = default_music_path
+        initial_path = self._get_initial_music_path()
 
         file_path, _ = QFileDialog.getOpenFileName(
             self,
@@ -1516,6 +1494,7 @@ class PlaylistWindow(PlaylistInputMixin, PlaylistRendererMixin, QWidget):
             options=options,
         )
         if file_path:
+            self._update_last_used_dir(file_path)
             new_filepaths = []
             new_display_items = []
 
@@ -1827,20 +1806,7 @@ class PlaylistWindow(PlaylistInputMixin, PlaylistRendererMixin, QWidget):
                 self.update()
         elif control_name == "open":
             # Open file dialog to load a track
-            from PySide6.QtWidgets import QFileDialog
-
-            # Use default music path from preferences if available, otherwise use empty string
-            initial_path = ""  # Default fallback
-            if (
-                hasattr(self, "main_window")
-                and self.main_window
-                and hasattr(self.main_window, "preferences")
-            ):
-                default_music_path = (
-                    self.main_window.preferences.get_default_music_path()
-                )
-                if default_music_path:
-                    initial_path = default_music_path
+            initial_path = self._get_initial_music_path()
 
             file_path, _ = QFileDialog.getOpenFileName(
                 self,
@@ -1850,6 +1816,7 @@ class PlaylistWindow(PlaylistInputMixin, PlaylistRendererMixin, QWidget):
             )
 
             if file_path:
+                self._update_last_used_dir(file_path)
                 # Add to main window's playlist and play immediately
                 if self.main_window.audio_engine.load_track(file_path):
                     # For single file loading via open, create a new playlist with just this file
