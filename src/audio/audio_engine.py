@@ -92,8 +92,12 @@ class AudioEngine:
 
             # If the file is mono, librosa returns a 1D array, if stereo, it returns a 2D array [channels, samples]
             # With mono=False, stereo files return [2, samples], mono files return [1, samples]
-            logger.info(f"Loaded track: {file_path}, Sample rate: {self.sample_rate} Hz, Duration: {self.duration:.2f} s, Shape: {self.audio_data.shape if self.audio_data is not None else 'None'}")
-            logger.info(f"Audio data type: {self.audio_data.dtype if self.audio_data is not None else 'None'}")
+            logger.info(
+                f"Loaded track: {file_path}, Sample rate: {self.sample_rate} Hz, Duration: {self.duration:.2f} s, Shape: {self.audio_data.shape if self.audio_data is not None else 'None'}"
+            )
+            logger.info(
+                f"Audio data type: {self.audio_data.dtype if self.audio_data is not None else 'None'}"
+            )
 
             # Load metadata
             self._load_metadata(file_path)
@@ -130,23 +134,27 @@ class AudioEngine:
                     )
                     self.is_vbr = getattr(info, "bitrate_mode", 0) != 0
             else:
-                self.metadata.update({
+                self.metadata.update(
+                    {
+                        "title": "Unknown",
+                        "artist": "Unknown",
+                        "album": "Unknown",
+                        "album_artist": "Unknown",
+                        "album_art": None,
+                        "duration": self.duration,
+                    }
+                )
+        except (OSError, KeyError, AttributeError, TypeError, ValueError):
+            self.metadata.update(
+                {
                     "title": "Unknown",
                     "artist": "Unknown",
                     "album": "Unknown",
                     "album_artist": "Unknown",
                     "album_art": None,
                     "duration": self.duration,
-                })
-        except (OSError, KeyError, AttributeError, TypeError, ValueError):
-            self.metadata.update({
-                "title": "Unknown",
-                "artist": "Unknown",
-                "album": "Unknown",
-                "album_artist": "Unknown",
-                "album_art": None,
-                "duration": self.duration,
-            })
+                }
+            )
 
     def play(self):
         """Starts playback in a separate thread."""
@@ -723,9 +731,7 @@ class AudioEngine:
                 self.current_position = new_position
 
             self._update_visualization_buffer(chunk)
-            self._notify_position_update(
-                last_callback_time, callback_interval
-            )
+            self._notify_position_update(last_callback_time, callback_interval)
             self._copy_audio_to_output(outdata, chunk)
 
             start_idx = end_idx

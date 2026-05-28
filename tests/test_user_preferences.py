@@ -1,6 +1,5 @@
 import json
 import os
-import tempfile
 import pytest
 from unittest.mock import patch
 
@@ -12,9 +11,11 @@ def prefs_dir(tmp_path):
 
 @pytest.fixture
 def prefs(prefs_dir):
-    with patch("src.core.user_preferences.APP_DIRS_AVAILABLE", True), \
-         patch("src.core.user_preferences.appdirs.user_data_dir", return_value=prefs_dir):
+    with patch("src.core.user_preferences.APP_DIRS_AVAILABLE", True), patch(
+        "src.core.user_preferences.appdirs.user_data_dir", return_value=prefs_dir
+    ):
         from src.core.user_preferences import UserPreferences
+
         return UserPreferences()
 
 
@@ -27,9 +28,11 @@ class TestUserPreferencesLoadSave:
         prefs.save()
         assert os.path.exists(prefs.prefs_file_path)
 
-        with patch("src.core.user_preferences.APP_DIRS_AVAILABLE", True), \
-             patch("src.core.user_preferences.appdirs.user_data_dir", return_value=prefs_dir):
+        with patch("src.core.user_preferences.APP_DIRS_AVAILABLE", True), patch(
+            "src.core.user_preferences.appdirs.user_data_dir", return_value=prefs_dir
+        ):
             from src.core.user_preferences import UserPreferences
+
             loaded = UserPreferences()
         assert loaded.prefs.get("current_skin") == "/some/skin.wsz"
 
@@ -45,9 +48,11 @@ class TestUserPreferencesLoadSave:
         with open(prefs.prefs_file_path, "w") as f:
             json.dump({"version": "99.0"}, f)
 
-        with patch("src.core.user_preferences.APP_DIRS_AVAILABLE", True), \
-             patch("src.core.user_preferences.appdirs.user_data_dir", return_value=prefs_dir):
+        with patch("src.core.user_preferences.APP_DIRS_AVAILABLE", True), patch(
+            "src.core.user_preferences.appdirs.user_data_dir", return_value=prefs_dir
+        ):
             from src.core.user_preferences import UserPreferences
+
             loaded = UserPreferences()
         assert loaded.prefs["version"] == "1.0"
 
@@ -55,9 +60,11 @@ class TestUserPreferencesLoadSave:
         os.makedirs(os.path.dirname(prefs.prefs_file_path), exist_ok=True)
         with open(prefs.prefs_file_path, "w") as f:
             f.write("{invalid json")
-        with patch("src.core.user_preferences.APP_DIRS_AVAILABLE", True), \
-             patch("src.core.user_preferences.appdirs.user_data_dir", return_value=prefs_dir):
+        with patch("src.core.user_preferences.APP_DIRS_AVAILABLE", True), patch(
+            "src.core.user_preferences.appdirs.user_data_dir", return_value=prefs_dir
+        ):
             from src.core.user_preferences import UserPreferences
+
             loaded = UserPreferences()
         assert loaded.prefs["version"] == "1.0"
 

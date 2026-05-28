@@ -1,5 +1,13 @@
-from PySide6.QtWidgets import QWidget, QMessageBox, QFileDialog, QDialog, QVBoxLayout, QPushButton, QLabel
-from PySide6.QtGui import QPainter, QColor, QFont
+from PySide6.QtWidgets import (
+    QWidget,
+    QMessageBox,
+    QFileDialog,
+    QDialog,
+    QVBoxLayout,
+    QPushButton,
+    QLabel,
+)
+from PySide6.QtGui import QColor, QFont
 from PySide6.QtCore import Qt, QRect, QPoint
 import os
 import re
@@ -333,7 +341,9 @@ class PlaylistWindow(PlaylistInputMixin, PlaylistRendererMixin, QWidget):
         """Load font and color settings from pledit.txt in a single pass."""
         pledit_txt_path = self.skin_data.get_path("pledit.txt")
         if not pledit_txt_path or not os.path.exists(pledit_txt_path):
-            logger.warning("pledit.txt not found. Using default font and color settings.")
+            logger.warning(
+                "pledit.txt not found. Using default font and color settings."
+            )
             return
 
         try:
@@ -447,7 +457,7 @@ class PlaylistWindow(PlaylistInputMixin, PlaylistRendererMixin, QWidget):
             self.main_window.hide_playlist_window()
 
         # Stop timer before closing
-        if hasattr(self, 'time_display_timer'):
+        if hasattr(self, "time_display_timer"):
             self.time_display_timer.stop()
 
         # Accept the close event to actually close the window
@@ -673,12 +683,20 @@ class PlaylistWindow(PlaylistInputMixin, PlaylistRendererMixin, QWidget):
 
     def _update_last_used_dir(self, path):
         if path:
-            self._last_used_dir = os.path.dirname(path) if os.path.isfile(path) else path
+            self._last_used_dir = (
+                os.path.dirname(path) if os.path.isfile(path) else path
+            )
 
     def _load_file_to_playlist(self):
         options = QFileDialog.Options()
         initial_path = self._get_initial_music_path(
-            os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "resources", "test_music")
+            os.path.join(
+                os.path.dirname(
+                    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                ),
+                "resources",
+                "test_music",
+            )
         )
 
         file_path, _ = QFileDialog.getOpenFileName(
@@ -1296,7 +1314,13 @@ class PlaylistWindow(PlaylistInputMixin, PlaylistRendererMixin, QWidget):
         """Load all media files from a selected directory and its subdirectories."""
         options = QFileDialog.Options()
         initial_path = self._get_initial_music_path(
-            os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "resources", "test_music")
+            os.path.join(
+                os.path.dirname(
+                    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                ),
+                "resources",
+                "test_music",
+            )
         )
 
         directory_path = QFileDialog.getExistingDirectory(

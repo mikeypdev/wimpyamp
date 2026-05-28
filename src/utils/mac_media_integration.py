@@ -398,7 +398,9 @@ def create_mac_media_integration(main_window) -> Optional["MacMediaIntegration"]
         return None
 
     if not check_pyobjc_availability():
-        logger.info("PyObjC is not available. macOS media integration will not be loaded.")
+        logger.info(
+            "PyObjC is not available. macOS media integration will not be loaded."
+        )
         return None
 
     try:
@@ -406,7 +408,9 @@ def create_mac_media_integration(main_window) -> Optional["MacMediaIntegration"]
         logger.info("MacMediaIntegration successfully initialized and loaded")
         return integration
     except (RuntimeError, AttributeError, TypeError, OSError) as e:
-        logger.error(f"Failed to initialize MacMediaIntegration: {type(e).__name__}: {e}")
+        logger.error(
+            f"Failed to initialize MacMediaIntegration: {type(e).__name__}: {e}"
+        )
         traceback.print_exc()
         return None
 

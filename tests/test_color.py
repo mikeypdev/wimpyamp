@@ -1,4 +1,3 @@
-import pytest
 from src.utils.color import hex_to_rgb, rgb_to_hex, MAGENTA_TRANSPARENCY_RGB
 
 

@@ -154,7 +154,9 @@ class TextRenderer:
         # Get glyph coordinates for the specific character and band
         char_coords = self.char_to_coords.get(char_code)
         if char_coords is None:
-            logger.warning(f"Character '{char_code}' not found in char_to_coords mapping. Returning empty pixmap.")
+            logger.warning(
+                f"Character '{char_code}' not found in char_to_coords mapping. Returning empty pixmap."
+            )
             return QPixmap()
 
         # Get coordinates for the requested band, fallback to band 0 if band not available
@@ -185,7 +187,9 @@ class TextRenderer:
             sheet_x + glyph_width > self.text_bmp_image.width()
             or sheet_y + glyph_height > self.text_bmp_image.height()
         ):
-            logger.warning(f"Glyph coordinates for char_code '{char_code}' (band {band}) out of bounds. Returning empty pixmap.")
+            logger.warning(
+                f"Glyph coordinates for char_code '{char_code}' (band {band}) out of bounds. Returning empty pixmap."
+            )
             return QPixmap()
 
         # Crop the QImage directly
@@ -196,7 +200,9 @@ class TextRenderer:
         cropped_q_image = cropped_q_image.convertToFormat(QImage.Format_RGBA8888)
 
         if cropped_q_image.isNull():
-            logger.error(f"QImage failed to convert format for char_code {char_code} (band {band})")
+            logger.error(
+                f"QImage failed to convert format for char_code {char_code} (band {band})"
+            )
             return QPixmap()
 
         # Apply transparency using the top-left pixel key color

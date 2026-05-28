@@ -1,5 +1,4 @@
 import os
-import tempfile
 import zipfile
 import pytest
 from src.core.skin_parser import SkinParser

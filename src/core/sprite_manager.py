@@ -37,7 +37,9 @@ class SpriteManager:
                 cropped_pixmap = full_pixmap.copy(x, y, w, h)
 
                 if transparency_color:
-                    q_image = cropped_pixmap.toImage().convertToFormat(QImage.Format_ARGB32)
+                    q_image = cropped_pixmap.toImage().convertToFormat(
+                        QImage.Format_ARGB32
+                    )
                     mask = q_image.createMaskFromColor(
                         QColor(*transparency_color).rgb(), Qt.MaskOutColor
                     )
@@ -54,7 +56,9 @@ class SpriteManager:
                 if transparency_color:
                     arr = np.array(rgba_pil_image)
                     r, g, b = transparency_color
-                    match = (arr[:, :, 0] == r) & (arr[:, :, 1] == g) & (arr[:, :, 2] == b)
+                    match = (
+                        (arr[:, :, 0] == r) & (arr[:, :, 1] == g) & (arr[:, :, 2] == b)
+                    )
                     arr[match, 3] = 0
                     rgba_pil_image = Image.fromarray(arr, "RGBA")
 

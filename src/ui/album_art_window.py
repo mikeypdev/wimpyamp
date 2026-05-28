@@ -272,22 +272,32 @@ class AlbumArtWindow(QWidget):
                             self.set_album_art(pixmap)
                             return
                         else:
-                            logger.warning(f"Warning: Image became null after preprocessing for {current_file_path}")
+                            logger.warning(
+                                f"Warning: Image became null after preprocessing for {current_file_path}"
+                            )
                     else:
-                        logger.error(f"Warning: Failed to load image data for {current_file_path}")
+                        logger.error(
+                            f"Warning: Failed to load image data for {current_file_path}"
+                        )
                 else:
                     # Embedded image data is corrupted
-                    logger.warning(f"Warning: Corrupted embedded album art in {current_file_path}")
+                    logger.warning(
+                        f"Warning: Corrupted embedded album art in {current_file_path}"
+                    )
             except (OSError, ValueError, RuntimeError) as e:
                 # Error occurred while loading embedded art
-                logger.error(f"Error loading embedded album art from {current_file_path}: {e}")
+                logger.error(
+                    f"Error loading embedded album art from {current_file_path}: {e}"
+                )
 
         # 2. If no embedded art, search for local folder images
         folder_path = os.path.dirname(current_file_path)
         album_title = "Unknown"
         if self.main_window and hasattr(self.main_window, "audio_engine"):
             engine = self.main_window.audio_engine
-            album_title = engine.get_metadata().get("album", "Unknown") if engine else "Unknown"
+            album_title = (
+                engine.get_metadata().get("album", "Unknown") if engine else "Unknown"
+            )
         album_art_file = search_local_album_art(folder_path, album_title)
 
         if album_art_file and self.load_album_art_from_file(album_art_file):
@@ -316,10 +326,14 @@ class AlbumArtWindow(QWidget):
                     return
                 else:
                     # Default image data is corrupted
-                    logger.warning(f"Warning: Default album art image is corrupted: {default_art_path}")
+                    logger.warning(
+                        f"Warning: Default album art image is corrupted: {default_art_path}"
+                    )
             else:
                 # Default image file is missing
-                logger.warning(f"Warning: Default album art image not found: {default_art_path}")
+                logger.warning(
+                    f"Warning: Default album art image not found: {default_art_path}"
+                )
         except (OSError, ValueError, RuntimeError) as e:
             # Error occurred while loading default image
             logger.error(f"Error loading default album art: {e}")
@@ -368,7 +382,9 @@ class AlbumArtWindow(QWidget):
                     self.set_album_art(pixmap)
                     return True
                 else:
-                    logger.warning(f"Warning: Image became null after preprocessing from: {file_path}")
+                    logger.warning(
+                        f"Warning: Image became null after preprocessing from: {file_path}"
+                    )
                     return False
             else:
                 # File exists but image is corrupted

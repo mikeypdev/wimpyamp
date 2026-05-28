@@ -94,10 +94,7 @@ class TestHotspotsFormat:
         assert result["Element1"] == result["Element2"]
 
     def test_multiple_rects(self):
-        content = (
-            "Rect 0, 0, 100, 50; ButtonA\n"
-            "Rect 100, 0, 200, 50; ButtonB"
-        )
+        content = "Rect 0, 0, 100, 50; ButtonA\n" "Rect 100, 0, 200, 50; ButtonB"
         result = parse_hotspots_format(content)
         assert "ButtonA" in result
         assert "ButtonB" in result

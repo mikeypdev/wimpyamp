@@ -21,7 +21,9 @@ try:
     APP_DIRS_AVAILABLE = True
 except ImportError:
     APP_DIRS_AVAILABLE = False
-    logger.warning("appdirs module not available. Using fallback user data directory.")
+
+
+logger = get_logger(__name__)
 
 
 class UserPreferences:
@@ -617,9 +619,17 @@ class UserPreferences:
 
     def set_eq_settings(self, eq_on: bool, bands: dict):
         default_bands = {
-            "preamp": 0.0, "60hz": 0.0, "170hz": 0.0, "310hz": 0.0,
-            "600hz": 0.0, "1khz": 0.0, "3khz": 0.0, "6khz": 0.0,
-            "12khz": 0.0, "14khz": 0.0, "16khz": 0.0,
+            "preamp": 0.0,
+            "60hz": 0.0,
+            "170hz": 0.0,
+            "310hz": 0.0,
+            "600hz": 0.0,
+            "1khz": 0.0,
+            "3khz": 0.0,
+            "6khz": 0.0,
+            "12khz": 0.0,
+            "14khz": 0.0,
+            "16khz": 0.0,
         }
         if not eq_on and bands == default_bands:
             if "eq_settings" in self.prefs:
@@ -666,6 +676,3 @@ def get_preferences() -> UserPreferences:
     if _preferences_instance is None:
         _preferences_instance = UserPreferences()
     return _preferences_instance
-
-
-logger = get_logger(__name__)

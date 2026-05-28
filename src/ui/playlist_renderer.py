@@ -1,4 +1,4 @@
-from PySide6.QtGui import QPainter, QColor, QFont
+from PySide6.QtGui import QPainter, QColor
 from PySide6.QtCore import QRect, QPoint
 from ..utils.logger import get_logger
 from .playlist_constants import SUB_MENU_ITEMS, SUB_MENU_DECORATION_SPRITES
@@ -10,7 +10,13 @@ class PlaylistRendererMixin:
     def _get_regions_map(self):
         return {
             key: self.playlist_spec["layout"]["regions"][key]
-            for key in ("top_bar", "left_edge", "right_edge", "bottom_bar", "track_area")
+            for key in (
+                "top_bar",
+                "left_edge",
+                "right_edge",
+                "bottom_bar",
+                "track_area",
+            )
         }
 
     def _draw_tiled_region(self, painter, region_spec, target_rect):
@@ -300,7 +306,9 @@ class PlaylistRendererMixin:
                                 if self.width() < min_width:
                                     continue  # Skip this component if condition is not met
                             except ValueError:
-                                logger.warning(f"Could not parse width from condition: {condition}")
+                                logger.warning(
+                                    f"Could not parse width from condition: {condition}"
+                                )
                                 continue
 
                 sprite_pixmap = self._get_sprite_pixmap(component["sprite"])
@@ -575,9 +583,7 @@ class PlaylistRendererMixin:
                 )
                 sprite = self._get_sprite_pixmap(sprite_id)
                 if sprite:
-                    painter.drawPixmap(
-                        main_button_x, sub_menu_start_y + i * 18, sprite
-                    )
+                    painter.drawPixmap(main_button_x, sub_menu_start_y + i * 18, sprite)
 
         # Draw scrollbar
         scrollbar_spec = self.playlist_spec["layout"]["controls"]["scrollbar"]
@@ -746,4 +752,3 @@ class PlaylistRendererMixin:
 
                 # Use a smaller font or scale for better fit if needed
                 self.text_renderer.render_text(painter, display_text, text_x, text_y)
-

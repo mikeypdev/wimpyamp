@@ -24,6 +24,7 @@ class Renderer:
     }
     CLUTTERBAR_SIZE = (8, 43)
     CLUTTERBAR_DEST = (10, 22)
+
     def __init__(self, parent_widget):
         self.parent_widget = parent_widget
         self.sprite_manager = SpriteManager()
@@ -119,7 +120,9 @@ class Renderer:
             if not validate_sprite_in_bmp(
                 sheet_path, sprite_x, sprite_y, sprite_w, sprite_h
             ):
-                logger.warning(f"Sprite '{sprite_id}' at coordinates ({sprite_x}, {sprite_y}, {sprite_w}x{sprite_h}) is out of bounds in {sheet_path}. Skipping.")
+                logger.warning(
+                    f"Sprite '{sprite_id}' at coordinates ({sprite_x}, {sprite_y}, {sprite_w}x{sprite_h}) is out of bounds in {sheet_path}. Skipping."
+                )
                 self.sprite_manager.invalid_sprite_cache.add(cache_key)
                 return
 
@@ -136,7 +139,9 @@ class Renderer:
             if not pixmap.isNull():
                 painter.drawPixmap(dest_area["x"], dest_area["y"], pixmap)
         except KeyError as e:
-            logger.error(f"Sprite '{sprite_id}' not found in sheet '{sheet_name}' spec: {e}")
+            logger.error(
+                f"Sprite '{sprite_id}' not found in sheet '{sheet_name}' spec: {e}"
+            )
         except (OSError, ValueError, RuntimeError) as e:
             logger.error(f"ERROR drawing sprite {sprite_id} from {sheet_name}: {e}")
 

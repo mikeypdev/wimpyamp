@@ -5,6 +5,9 @@ This helps handle custom skins that may omit certain sprites.
 
 from PIL import Image
 import os
+from .logger import get_logger
+
+logger = get_logger(__name__)
 
 
 def validate_sprite_in_bmp(bmp_path, x, y, w, h):

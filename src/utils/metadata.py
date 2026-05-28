@@ -151,7 +151,9 @@ def normalize_filename(filename: str) -> str:
     return " ".join(normalized.split())
 
 
-def search_local_album_art(folder_path: str, album_title: str = "Unknown") -> str | None:
+def search_local_album_art(
+    folder_path: str, album_title: str = "Unknown"
+) -> str | None:
     """Search for local album art files in a folder.
 
     Checks standard filenames first, then falls back to matching

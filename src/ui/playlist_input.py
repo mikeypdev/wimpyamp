@@ -325,4 +325,3 @@ class PlaylistInputMixin:
                 self.update()
 
         super().mouseReleaseEvent(event)
-

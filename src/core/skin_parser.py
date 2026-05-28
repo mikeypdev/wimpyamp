@@ -86,7 +86,9 @@ class SkinParser:
                     return True
                 else:
                     self.skin_data.extracted_skin_dir = None
-                    logger.error(f"{self.skin_path} does not contain valid Winamp skin data.")
+                    logger.error(
+                        f"{self.skin_path} does not contain valid Winamp skin data."
+                    )
                     # Clean up extracted files
                     shutil.rmtree(temp_extract_dir)
                     return False
@@ -97,7 +99,9 @@ class SkinParser:
                 logger.error(f"{self.skin_path} contains unsafe paths: {e}")
                 return False
         else:
-            logger.error(f"Unknown skin path type: {self.skin_path}. Must be a directory, .wsz file, or .zip file.")
+            logger.error(
+                f"Unknown skin path type: {self.skin_path}. Must be a directory, .wsz file, or .zip file."
+            )
             return False
 
     def _validate_skin_directory(self, skin_dir: str) -> bool:
@@ -117,7 +121,9 @@ class SkinParser:
         # Check for required files (case-insensitively)
         for required_file in required_files:
             if required_file.lower() not in self.skin_data.file_mapping:
-                logger.info(f"Required skin file '{required_file}' not found in {skin_dir}")
+                logger.info(
+                    f"Required skin file '{required_file}' not found in {skin_dir}"
+                )
                 return False
 
         # Additional check: verify that main.bmp is actually an image file
@@ -173,7 +179,9 @@ class SkinParser:
         if viscolor_path and os.path.exists(viscolor_path):
             self.skin_data.viscolor_data = self._load_viscolor_file(viscolor_path)
         else:
-            logger.warning(f"viscolor.txt not found in {self.skin_data.extracted_skin_dir}, using defaults")
+            logger.warning(
+                f"viscolor.txt not found in {self.skin_data.extracted_skin_dir}, using defaults"
+            )
             self.skin_data.viscolor_data = list(DEFAULT_VIS_COLORS)
 
     def _load_region_data(self):
@@ -187,7 +195,9 @@ class SkinParser:
                 logger.warning(f"Could not parse region.txt: {e}")
                 self.skin_data.region_data = None
         else:
-            logger.info(f"region.txt not found in {self.skin_data.extracted_skin_dir}, skipping region parsing")
+            logger.info(
+                f"region.txt not found in {self.skin_data.extracted_skin_dir}, skipping region parsing"
+            )
             self.skin_data.region_data = None
 
     def _load_viscolor_file(self, viscolor_path):
@@ -210,7 +220,9 @@ class SkinParser:
                         (max(0, min(255, r)), max(0, min(255, g)), max(0, min(255, b)))
                     )
                 except ValueError:
-                    logger.warning(f"Invalid color format in viscolor.txt line {i+1}: {line}")
+                    logger.warning(
+                        f"Invalid color format in viscolor.txt line {i+1}: {line}"
+                    )
                     colors.append((0, 0, 0))
 
             while len(colors) < 24:

@@ -236,7 +236,9 @@ class DockingMixin:
         potential_snaps = []
 
         # Check for snapping to other windows (main window and floating windows)
-        target_windows = [self] + self._get_visible_floating_windows(exclude_window=exclude_window)
+        target_windows = [self] + self._get_visible_floating_windows(
+            exclude_window=exclude_window
+        )
 
         # Check each target window for potential snapping
         for target_window in target_windows:
@@ -380,7 +382,9 @@ class DockingMixin:
         # of any part of another window, consider it still docked
         unsnap_threshold = 25  # pixels
 
-        target_windows = [self] + self._get_visible_floating_windows(exclude_window=exclude_window)
+        target_windows = [self] + self._get_visible_floating_windows(
+            exclude_window=exclude_window
+        )
 
         # Check each target window to see if the specified window rect is near it
         for target_window in target_windows:

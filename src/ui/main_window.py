@@ -4,10 +4,9 @@ from PySide6.QtWidgets import (
     QWidget,
     QFileDialog,
     QMenuBar,
-    QMenu,
 )
 from PySide6.QtGui import QPainter, QKeySequence, QShortcut, QAction, QFileOpenEvent
-from PySide6.QtCore import Qt, QPoint, QRect, QTimer, QDir
+from PySide6.QtCore import Qt, QPoint, QRect, QTimer
 import os
 import queue
 
@@ -21,7 +20,7 @@ from .ui_state import UIState
 from .playlist_window import PlaylistWindow
 from .equalizer_window import EqualizerWindow
 from .album_art_window import AlbumArtWindow
-from .dialogs import PreferencesDialog, SkinSelectionDialog
+from .dialogs import SkinSelectionDialog
 from .docking import DockingMixin
 
 from ..audio.audio_engine import AudioEngine
@@ -37,6 +36,7 @@ class MainWindow(DockingMixin, QWidget):
     CLOSE_BUTTON_RECT = (264, 3, 9, 9)
     TITLEBAR_HEIGHT = 14
     CLUTTERBAR_RECT = (8, 22, 12, 43)
+
     def __init__(self):
         super().__init__()
         self.setWindowTitle("WimPyAmp Music Player")
@@ -86,7 +86,9 @@ class MainWindow(DockingMixin, QWidget):
 
         # If the preferred skin failed to load, fall back to default
         if not self.skin_data.extracted_skin_dir and preferred_skin:
-            logger.error(f"Preferred skin {preferred_skin} failed to load, falling back to default")
+            logger.error(
+                f"Preferred skin {preferred_skin} failed to load, falling back to default"
+            )
             self.skin_path = self.default_skin_path
             self.skin_parser = SkinParser(self.skin_path)
             self.skin_data = self.skin_parser.parse()
@@ -118,9 +120,13 @@ class MainWindow(DockingMixin, QWidget):
             if self.mac_media_integration:
                 logger.info("macOS media integration successfully loaded")
             else:
-                logger.info("macOS media integration not loaded (likely not on macOS or PyObjC unavailable)")
+                logger.info(
+                    "macOS media integration not loaded (likely not on macOS or PyObjC unavailable)"
+                )
         except ImportError as e:
-            logger.info(f"Could not import mac_media_integration: {e}")  # pyobjc not available
+            logger.info(
+                f"Could not import mac_media_integration: {e}"
+            )  # pyobjc not available
 
         # Set up keyboard shortcuts for media controls
         self.setup_media_shortcuts()
@@ -757,7 +763,11 @@ class MainWindow(DockingMixin, QWidget):
         self.ui_state.is_eject_pressed = True
         self.update()
         QApplication.processEvents()
-        if hasattr(self, "playlist_window") and self.playlist_window and self.playlist_window._last_used_dir:
+        if (
+            hasattr(self, "playlist_window")
+            and self.playlist_window
+            and self.playlist_window._last_used_dir
+        ):
             initial_path = self.playlist_window._last_used_dir
         else:
             initial_path = self.preferences.get_default_music_path() or ""
@@ -786,9 +796,15 @@ class MainWindow(DockingMixin, QWidget):
                     self.ui_state.current_track_title = os.path.basename(file_path)
                 self.audio_engine.play()
                 self.playlist_window.set_current_track_index(0)
-                if hasattr(self, "album_art_window") and self.album_art_window.isVisible():
+                if (
+                    hasattr(self, "album_art_window")
+                    and self.album_art_window.isVisible()
+                ):
                     self.album_art_window.refresh_album_art(self.audio_engine)
-                if hasattr(self, "mac_media_integration") and self.mac_media_integration:
+                if (
+                    hasattr(self, "mac_media_integration")
+                    and self.mac_media_integration
+                ):
                     self.mac_media_integration.update_now_playing_info()
                     self.mac_media_integration.update_playback_state()
             else:
@@ -900,9 +916,14 @@ class MainWindow(DockingMixin, QWidget):
 
             # Spec-driven area dispatch
             spec_areas = [
-                "volume_slider", "balance_slider", "position_track",
-                "playlist_button", "eq_button", "shuffle_dest",
-                "repeat_dest", "eject",
+                "volume_slider",
+                "balance_slider",
+                "position_track",
+                "playlist_button",
+                "eq_button",
+                "shuffle_dest",
+                "repeat_dest",
+                "eject",
             ]
             for area_key in spec_areas:
                 if self._handle_area_press(area_key, event):
@@ -1293,7 +1314,9 @@ class MainWindow(DockingMixin, QWidget):
             stop_shortcut.activated.connect(self._handle_stop_action)
         except (RuntimeError, TypeError):
             # If Media keys are not supported on this system, just use space bar as primary control
-            logger.info("Media keys not supported on this system, use Space bar for play/pause")
+            logger.info(
+                "Media keys not supported on this system, use Space bar for play/pause"
+            )
 
         # Using only regular PyQt5 keyboard shortcuts for media keys
         # These work without requiring system permissions on macOS
@@ -1407,7 +1430,9 @@ class MainWindow(DockingMixin, QWidget):
 
                 # If a track is playing, just add to playlist and return
                 if is_playing:
-                    logger.info(f"Added {os.path.basename(file_path)} to playlist (not interrupting current track)")
+                    logger.info(
+                        f"Added {os.path.basename(file_path)} to playlist (not interrupting current track)"
+                    )
                     return True
 
                 # If no track is playing but playlist was not empty, play the newly added track
@@ -1606,11 +1631,15 @@ class MainWindow(DockingMixin, QWidget):
                 if self.playlist:
                     first_track_index = 0
                     if self.play_track_at_index(first_track_index):
-                        logger.info(f"Loaded playlist and started playing: {os.path.basename(self.playlist[first_track_index])}")
+                        logger.info(
+                            f"Loaded playlist and started playing: {os.path.basename(self.playlist[first_track_index])}"
+                        )
                         return True
                     else:
                         # If we can't play the first track, still consider the playlist loaded
-                        logger.error(f"Playlist loaded with {len(self.playlist)} tracks, but first track failed to play")
+                        logger.error(
+                            f"Playlist loaded with {len(self.playlist)} tracks, but first track failed to play"
+                        )
                         return True
                 else:
                     logger.info("Playlist loaded but is empty")
