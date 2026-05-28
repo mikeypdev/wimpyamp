@@ -277,6 +277,20 @@ class MainWindow(DockingMixin, QWidget):
         This method prepares the codebase for future implementation of loading visibility
         states from user preferences by establishing the pattern for tracking these states.
         """
+        # Restore EQ settings (band levels and on/off) before window init
+        eq_settings = self.preferences.get_eq_settings()
+        if eq_settings:
+            self.audio_engine.set_eq(eq_settings["bands"])
+            self.audio_engine.toggle_eq(eq_settings["enabled"])
+            self.equalizer_window._init_eq_values_from_engine()
+
+        # Restore saved playlist
+        saved_playlist = self.preferences.get_saved_playlist()
+        if saved_playlist:
+            self.playlist = saved_playlist
+            self.playlist_window.set_playlist_filepaths(saved_playlist)
+            self.update_playlist_display()
+
         # Load EQ window visibility from preferences
         eq_visibility = self.preferences.get_eq_window_visibility()
         if eq_visibility is not None:
@@ -1731,6 +1745,18 @@ class MainWindow(DockingMixin, QWidget):
         self.preferences.set_album_art_window_visibility(
             self.ui_state.album_art_visible
         )
+
+        # Save EQ settings (band levels and on/off state)
+        if hasattr(self, "equalizer_window"):
+            self.preferences.set_eq_settings(
+                self.equalizer_window.is_eq_on, self.audio_engine.eq_bands
+            )
+
+        # Save playlist if preference enabled
+        if self.preferences.get_restore_playlist():
+            self.preferences.set_saved_playlist(list(self.playlist))
+        else:
+            self.preferences.set_saved_playlist([])
 
         # Save all window positions (only for windows that were visible at shutdown)
         if self.ui_state.eq_button_on and hasattr(self, "equalizer_window"):

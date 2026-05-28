@@ -612,6 +612,45 @@ class UserPreferences:
                 del self.prefs["default_skin_path"]
                 self._save_if_changed()
 
+    def get_eq_settings(self) -> dict | None:
+        return self.prefs.get("eq_settings")
+
+    def set_eq_settings(self, eq_on: bool, bands: dict):
+        default_bands = {
+            "preamp": 0.0, "60hz": 0.0, "170hz": 0.0, "310hz": 0.0,
+            "600hz": 0.0, "1khz": 0.0, "3khz": 0.0, "6khz": 0.0,
+            "12khz": 0.0, "14khz": 0.0, "16khz": 0.0,
+        }
+        if not eq_on and bands == default_bands:
+            if "eq_settings" in self.prefs:
+                del self.prefs["eq_settings"]
+                self._save_if_changed()
+        else:
+            self.prefs["eq_settings"] = {"enabled": eq_on, "bands": bands}
+            self._save_if_changed()
+
+    def get_restore_playlist(self) -> bool:
+        return self.prefs.get("restore_playlist", True)
+
+    def set_restore_playlist(self, enabled: bool):
+        if enabled:
+            if "restore_playlist" in self.prefs:
+                del self.prefs["restore_playlist"]
+                self._save_if_changed()
+        else:
+            self.prefs["restore_playlist"] = False
+            self._save_if_changed()
+
+    def get_saved_playlist(self) -> list | None:
+        return self.prefs.get("saved_playlist")
+
+    def set_saved_playlist(self, filepaths: list):
+        if filepaths:
+            self.prefs["saved_playlist"] = filepaths
+        elif "saved_playlist" in self.prefs:
+            del self.prefs["saved_playlist"]
+        self._save_if_changed()
+
 
 # Global preferences instance
 _preferences_instance = None

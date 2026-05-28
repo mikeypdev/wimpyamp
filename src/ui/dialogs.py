@@ -1,4 +1,5 @@
 from PySide6.QtWidgets import (
+    QCheckBox,
     QDialog,
     QVBoxLayout,
     QHBoxLayout,
@@ -15,7 +16,7 @@ class PreferencesDialog(QDialog):
         super().__init__(parent)
         self.preferences = preferences
         self.setWindowTitle("Preferences")
-        self.setFixedSize(400, 200)
+        self.setFixedSize(400, 230)
 
         layout = QVBoxLayout()
 
@@ -53,6 +54,12 @@ class PreferencesDialog(QDialog):
         skin_path_layout.addWidget(self.skin_path_line_edit)
         skin_path_layout.addWidget(self.browse_skin_path_btn)
 
+        # Restore playlist checkbox
+        self.restore_playlist_cb = QCheckBox("Remember playlist on exit")
+        self.restore_playlist_cb.setChecked(
+            self.preferences.get_restore_playlist() if self.preferences else True
+        )
+
         # Buttons
         button_layout = QHBoxLayout()
         self.ok_btn = QPushButton("OK")
@@ -65,6 +72,7 @@ class PreferencesDialog(QDialog):
 
         layout.addLayout(music_path_layout)
         layout.addLayout(skin_path_layout)
+        layout.addWidget(self.restore_playlist_cb)
         layout.addStretch()  # Add some spacing
         layout.addLayout(button_layout)
         self.setLayout(layout)
@@ -101,6 +109,7 @@ class PreferencesDialog(QDialog):
             self.preferences.set_default_music_path(music_path)
             skin_path = self.skin_path_line_edit.text().strip()
             self.preferences.set_default_skin_path(skin_path)
+            self.preferences.set_restore_playlist(self.restore_playlist_cb.isChecked())
         super().accept()
 
 
