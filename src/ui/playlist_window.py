@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QWidget, QMessageBox, QFileDialog
+from PySide6.QtWidgets import QWidget, QMessageBox, QFileDialog, QDialog, QVBoxLayout, QPushButton, QLabel
 from PySide6.QtGui import QPainter, QColor, QFont
 from PySide6.QtCore import Qt, QRect, QPoint
 import os
@@ -857,33 +857,24 @@ class PlaylistWindow(PlaylistInputMixin, PlaylistRendererMixin, QWidget):
 
     def _show_sort_dialog(self):
         """Show dialog with options to sort the playlist."""
-        from PySide6.QtWidgets import QDialog, QVBoxLayout, QPushButton, QLabel
-
         dialog = QDialog(self)
         dialog.setWindowTitle("Sort Playlist")
         dialog.setModal(True)
 
         layout = QVBoxLayout()
+        layout.addWidget(QLabel("Select sorting method:"))
 
-        label = QLabel("Select sorting method:")
-        layout.addWidget(label)
+        sort_options = [
+            ("Sort by Track Number", self._sort_key_track_number),
+            ("Sort by Title", self._sort_key_title),
+            ("Sort by Filename", self._sort_key_filename),
+            ("Sort Randomly", None),
+        ]
+        for label, key_fn in sort_options:
+            btn = QPushButton(label)
+            btn.clicked.connect(lambda checked, k=key_fn: self._apply_sort(k, dialog))
+            layout.addWidget(btn)
 
-        # Sort by title (extract from playlist item text)
-        sort_by_title_btn = QPushButton("Sort by Title")
-        sort_by_title_btn.clicked.connect(lambda: self._sort_playlist_by_title())
-        layout.addWidget(sort_by_title_btn)
-
-        # Sort by filename (extract from playlist item text)
-        sort_by_filename_btn = QPushButton("Sort by Filename")
-        sort_by_filename_btn.clicked.connect(lambda: self._sort_playlist_by_filename())
-        layout.addWidget(sort_by_filename_btn)
-
-        # Sort randomly
-        sort_randomly_btn = QPushButton("Sort Randomly")
-        sort_randomly_btn.clicked.connect(lambda: self._sort_playlist_randomly())
-        layout.addWidget(sort_randomly_btn)
-
-        # Cancel button
         cancel_btn = QPushButton("Cancel")
         cancel_btn.clicked.connect(dialog.close)
         layout.addWidget(cancel_btn)
@@ -891,102 +882,54 @@ class PlaylistWindow(PlaylistInputMixin, PlaylistRendererMixin, QWidget):
         dialog.setLayout(layout)
         dialog.exec_()
 
-    def _sort_playlist_by_title(self):
-        """Sort playlist by track title."""
-        if not self.playlist_items:
+    def _apply_sort(self, key_fn, dialog):
+        if dialog:
+            dialog.close()
+        if not self.playlist_filepaths:
             return
 
-        # Extract titles from playlist items for sorting
-        def extract_title(item):
-            # Format is "X. Title" - extract the title part after the number and ". "
-            parts = item.split(". ", 1)
-            return parts[1] if len(parts) > 1 else item
+        if self.selected_items:
+            indices = sorted(self.selected_items)
+        else:
+            indices = list(range(len(self.playlist_filepaths)))
 
-        # Create tuples of (original_index, extracted_title, original_item, original_filepath)
-        indexed_items = [
-            (
-                i,
-                extract_title(item),
-                item,
-                self.playlist_filepaths[i] if i < len(self.playlist_filepaths) else "",
-            )
-            for i, item in enumerate(self.playlist_items)
-        ]
+        if key_fn is None:
+            random.shuffle(indices)
+        else:
+            indices.sort(key=lambda i: key_fn(self.playlist_filepaths[i]))
 
-        # Sort by extracted title
-        sorted_items = sorted(indexed_items, key=lambda x: x[1])
+        sorted_paths = [self.playlist_filepaths[i] for i in indices]
 
-        # Extract the sorted original filepaths
-        self.playlist_filepaths = [item[3] for item in sorted_items]
+        if self.selected_items:
+            for sort_pos, orig_pos in enumerate(sorted(indices)):
+                self.playlist_filepaths[orig_pos] = sorted_paths[sort_pos]
+        else:
+            self.playlist_filepaths = sorted_paths
 
-        # Regenerate playlist display items based on current display options
+        self.selected_items.clear()
+        self.last_selected_item_index = -1
         self._regenerate_playlist_display_items()
-
-        # Update main window's playlist to sync both lists
         if self.main_window:
             self.main_window.set_playlist(self.playlist_filepaths)
-
         self.update()
 
-    def _sort_playlist_by_filename(self):
-        """Sort playlist by filename."""
-        if not self.playlist_items:
-            return
+    def _sort_key_title(self, filepath):
+        metadata = self._get_track_metadata(filepath)
+        title = metadata.get("title", "")
+        if title and title != "Unknown":
+            return title.lower()
+        return os.path.basename(filepath).lower()
 
-        def extract_filename(item):
-            # Extract filename from the item text (after the number prefix)
-            parts = item.split(". ", 1)
-            title = parts[1] if len(parts) > 1 else item
-            # Get just the filename part (remove path if present)
-            return os.path.basename(title).lower()
+    def _sort_key_filename(self, filepath):
+        return os.path.basename(filepath).lower()
 
-        indexed_items = [
-            (
-                i,
-                extract_filename(item),
-                item,
-                self.playlist_filepaths[i] if i < len(self.playlist_filepaths) else "",
-            )
-            for i, item in enumerate(self.playlist_items)
-        ]
-        sorted_items = sorted(indexed_items, key=lambda x: x[1])
-        self.playlist_filepaths = [item[3] for item in sorted_items]
-
-        # Regenerate playlist display items based on current display options
-        self._regenerate_playlist_display_items()
-
-        # Update main window's playlist to sync both lists
-        if self.main_window:
-            self.main_window.set_playlist(self.playlist_filepaths)
-
-        self.update()
-
-    def _sort_playlist_randomly(self):
-        """Sort playlist in random order."""
-        if not self.playlist_items:
-            return
-
-        # Create copies and shuffle them in the same order
-        indices = list(range(len(self.playlist_items)))
-        random.shuffle(indices)  # Shuffle the indices
-
-        # Create shuffled versions based on shuffled indices
-        shuffled_filepaths = [
-            self.playlist_filepaths[i] if i < len(self.playlist_filepaths) else ""
-            for i in indices
-        ]
-
-        # Update filepaths list
-        self.playlist_filepaths = shuffled_filepaths
-
-        # Regenerate playlist display items based on current display options
-        self._regenerate_playlist_display_items()
-
-        # Update main window's playlist to sync both lists
-        if self.main_window:
-            self.main_window.set_playlist(self.playlist_filepaths)
-
-        self.update()
+    def _sort_key_track_number(self, filepath):
+        metadata = self._get_track_metadata(filepath)
+        track = metadata.get("tracknumber", "Unknown")
+        try:
+            return int(track)
+        except (ValueError, TypeError):
+            return 9999
 
     def _renumber_playlist(self):
         """Update the numbering of playlist items."""
