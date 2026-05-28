@@ -15,7 +15,7 @@ class PreferencesDialog(QDialog):
         super().__init__(parent)
         self.preferences = preferences
         self.setWindowTitle("Preferences")
-        self.setFixedSize(400, 150)
+        self.setFixedSize(400, 200)
 
         layout = QVBoxLayout()
 
@@ -24,7 +24,6 @@ class PreferencesDialog(QDialog):
         music_path_label = QLabel("Default Music Path:")
         self.music_path_line_edit = QLineEdit()
 
-        # Load current value if available
         current_path = (
             self.preferences.get_default_music_path() if self.preferences else ""
         )
@@ -37,6 +36,23 @@ class PreferencesDialog(QDialog):
         music_path_layout.addWidget(self.music_path_line_edit)
         music_path_layout.addWidget(self.browse_music_path_btn)
 
+        # Default Skin Directory section
+        skin_path_layout = QHBoxLayout()
+        skin_path_label = QLabel("Default Skin Directory:")
+        self.skin_path_line_edit = QLineEdit()
+
+        current_skin_path = (
+            self.preferences.get_default_skin_path() if self.preferences else ""
+        )
+        self.skin_path_line_edit.setText(current_skin_path if current_skin_path else "")
+
+        self.browse_skin_path_btn = QPushButton("Browse...")
+        self.browse_skin_path_btn.clicked.connect(self.browse_skin_path)
+
+        skin_path_layout.addWidget(skin_path_label)
+        skin_path_layout.addWidget(self.skin_path_line_edit)
+        skin_path_layout.addWidget(self.browse_skin_path_btn)
+
         # Buttons
         button_layout = QHBoxLayout()
         self.ok_btn = QPushButton("OK")
@@ -48,6 +64,7 @@ class PreferencesDialog(QDialog):
         button_layout.addWidget(self.cancel_btn)
 
         layout.addLayout(music_path_layout)
+        layout.addLayout(skin_path_layout)
         layout.addStretch()  # Add some spacing
         layout.addLayout(button_layout)
         self.setLayout(layout)
@@ -65,11 +82,25 @@ class PreferencesDialog(QDialog):
         if directory:
             self.music_path_line_edit.setText(directory)
 
+    def browse_skin_path(self):
+        current_path = self.skin_path_line_edit.text()
+        directory = QFileDialog.getExistingDirectory(
+            self,
+            "Select Default Skin Directory",
+            current_path if current_path else QDir.homePath(),
+            QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks,
+        )
+
+        if directory:
+            self.skin_path_line_edit.setText(directory)
+
     def accept(self):
         """Override accept to save preferences before closing."""
         if self.preferences:
             music_path = self.music_path_line_edit.text().strip()
             self.preferences.set_default_music_path(music_path)
+            skin_path = self.skin_path_line_edit.text().strip()
+            self.preferences.set_default_skin_path(skin_path)
         super().accept()
 
 

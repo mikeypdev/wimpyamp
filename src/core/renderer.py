@@ -645,7 +645,7 @@ class Renderer:
         elif (
             self.current_vis_mode == "OSCILLOSCOPE"
             and audio_data is not None
-            and audio_data.size > 0
+            and len(audio_data) > 0
         ):
             # Store oscilloscope data
             self.audio_data_queue = audio_data

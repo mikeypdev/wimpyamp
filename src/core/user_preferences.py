@@ -600,6 +600,18 @@ class UserPreferences:
                 del self.prefs["default_music_path"]
                 self._save_if_changed()
 
+    def get_default_skin_path(self) -> str | None:
+        return self.prefs.get("default_skin_path")
+
+    def set_default_skin_path(self, path: str):
+        if path:
+            self.prefs["default_skin_path"] = path
+            self._save_if_changed()
+        else:
+            if "default_skin_path" in self.prefs:
+                del self.prefs["default_skin_path"]
+                self._save_if_changed()
+
 
 # Global preferences instance
 _preferences_instance = None

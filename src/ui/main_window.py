@@ -1223,7 +1223,7 @@ class MainWindow(DockingMixin, QWidget):
             skin_path, _ = QFileDialog.getOpenFileName(
                 self,
                 "Load Winamp Skin",
-                "",
+                self.preferences.get_default_skin_path() or "",
                 "Winamp Skins (*.wsz *.zip);;Winamp Skins (*.wsz);;ZIP Files (*.zip);;All Files (*)",
             )
 
